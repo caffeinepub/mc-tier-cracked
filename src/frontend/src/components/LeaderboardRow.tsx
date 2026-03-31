@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { PlayerTag } from "../backend.d";
 import type { GamemodeId, Player, Tier } from "../data/dummyData";
 import TierBadge from "./TierBadge";
 
@@ -9,6 +10,7 @@ interface LeaderboardRowProps {
   modeId?: GamemodeId;
   modeName?: string;
   index: number;
+  tags?: PlayerTag[];
 }
 
 function getAvatarColors(username: string) {
@@ -22,16 +24,64 @@ function getAvatarColors(username: string) {
   return colors[username.charCodeAt(0) % colors.length];
 }
 
+const TAG_CONFIG: Record<
+  PlayerTag,
+  { label: string; color: string; bg: string }
+> = {
+  [PlayerTag.player]: {
+    label: "PLAYER",
+    color: "#23D7FF",
+    bg: "rgba(35,215,255,0.12)",
+  },
+  [PlayerTag.tierTester]: {
+    label: "TIER TESTER",
+    color: "#A855F7",
+    bg: "rgba(168,85,247,0.12)",
+  },
+  [PlayerTag.experienced]: {
+    label: "EXPERIENCED",
+    color: "#FFD700",
+    bg: "rgba(255,215,0,0.12)",
+  },
+  [PlayerTag.new_]: {
+    label: "NEW",
+    color: "#22C55E",
+    bg: "rgba(34,197,94,0.12)",
+  },
+};
+
+export function TagBadge({ tag }: { tag: PlayerTag }) {
+  const cfg = TAG_CONFIG[tag];
+  if (!cfg) return null;
+  return (
+    <span
+      className="text-xs font-bold px-1.5 py-0.5 rounded-full"
+      style={{
+        color: cfg.color,
+        backgroundColor: cfg.bg,
+        border: `1px solid ${cfg.color}44`,
+        letterSpacing: "0.05em",
+        fontSize: "9px",
+        whiteSpace: "nowrap",
+      }}
+    >
+      {cfg.label}
+    </span>
+  );
+}
+
 export default function LeaderboardRow({
   rank,
   player,
   tier,
   modeName,
   index,
+  tags = [],
 }: LeaderboardRowProps) {
   const [c1, c2] = getAvatarColors(player.username);
   const isTop3 = rank <= 3;
   const rankColors = ["#FFD700", "#C0C0C0", "#CD7F32"];
+  const visibleTags = tags.slice(0, 2);
 
   return (
     <Link
@@ -95,11 +145,16 @@ export default function LeaderboardRow({
         >
           {player.username}
         </span>
-        {player.testerVerified && (
-          <span className="text-xs" style={{ color: "#23D7FF" }}>
-            ✓ Verified Tester
-          </span>
-        )}
+        <div className="flex items-center gap-1 flex-wrap mt-0.5">
+          {player.testerVerified && (
+            <span className="text-xs" style={{ color: "#23D7FF" }}>
+              ✓ Verified Tester
+            </span>
+          )}
+          {visibleTags.map((tag) => (
+            <TagBadge key={tag} tag={tag} />
+          ))}
+        </div>
       </div>
 
       <TierBadge tier={tier} size="sm" />

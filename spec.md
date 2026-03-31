@@ -1,45 +1,33 @@
 # MC Tier (Cracked)
 
 ## Current State
-- UI-only prototype with dummy data (PLAYERS array in dummyData.ts)
-- No backend, no auth, no database
-- Leaderboard shows all dummy players
-- Navbar has a non-functional LOGIN button
-- 5 pages: Home, Gamemodes, Gamemode detail, Leaderboard, Player Profile
+- Admin panel at `/admin` exists, secured by Internet Identity admin role
+- Has PENDING, APPROVED, USERS, TAGS tabs
+- APPROVED section only shows players with delete; no rank editing or banning
+- No frontend password gate (only backend role check)
+- No ban system
 
 ## Requested Changes (Diff)
 
 ### Add
-- Email + password authentication via `authorization` component
-- Role system: Admin, Tester, User
-- Backend: Players table (username, discord optional, ranks per gamemode)
-- Backend: Submissions table (username, ranks, submitted_by, status: pending/approved/rejected)
-- Tester dashboard: form to submit a player application (username + gamemode ranks)
-- Admin panel (hidden route `/admin`): approve/reject submissions, edit/delete approved players, manage gamemodes
-- Login page/modal wired to actual auth
-- Navbar LOGIN button opens login modal
+- Frontend password gate on `/admin` (username + password form before admin panel is shown)
+- Ban user functionality: admin can ban a player by principal, banned players hidden from leaderboard
+- Edit player ranks functionality in the APPROVED tab
+- Show submitter's tag in PENDING applications (highlight tier tester submissions)
+- `listAllApplicationsWithPrincipals` backend query (returns principal + application for each player)
+- `banUser`, `unbanUser`, `getBannedUsers` backend functions
+- New BANNED tab in admin panel to view/unban users
 
 ### Modify
-- Leaderboard: fetch from backend instead of dummy data; show only approved players
-- Player Profile: fetch from backend
-- Navbar: show logged-in user, role badge, logout button when authenticated
+- `getLeaderboard`, `listAllApprovedPlayers`, `getByGamemode`, `getByTier` to exclude banned users
+- AdminPage APPROVED section to include rank edit form per player
+- AdminPage PENDING section to show submitter's tag badge if they have tier-tester tag
 
 ### Remove
-- Dummy data usage from Leaderboard and Player Profile (keep dummyData.ts for types/constants)
+- Nothing removed
 
 ## Implementation Plan
-1. Select `authorization` component
-2. Generate Motoko backend with:
-   - Player type: {id, username, discord, ranks, addedBy, approvedBy}
-   - Submission type: {id, username, discord, ranks, submittedBy, status, createdAt}
-   - CRUD for players (admin only for direct add/edit/delete)
-   - Submit application (tester only)
-   - Approve/reject submission (admin only)
-   - Get approved players (public)
-   - Get all submissions (admin/tester)
-   - Role management via authorization component
-3. Wire frontend:
-   - Login modal in Navbar
-   - Leaderboard reads from backend (approved players only)
-   - Tester page: submission form
-   - Admin page: submissions list with approve/reject, players list with edit/delete
+1. Update `main.mo`: add bannedUsers map, banUser/unbanUser/getBannedUsers, listAllApplicationsWithPrincipals, filter banned from leaderboard queries
+2. Update `backend.d.ts` with new types/interfaces
+3. Update `useQueries.ts`: add useEditPlayer, useBanUser, useUnbanUser, useBannedUsers, useAllApplicationsWithPrincipals hooks
+4. Update `AdminPage.tsx`: add password gate, edit rank UI in APPROVED, ban UI, BANNED tab, tag highlight in PENDING

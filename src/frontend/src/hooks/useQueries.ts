@@ -1,8 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { Application, Tier as BackendTier } from "../backend.d";
+import type {
+  Application,
+  Tier as BackendTier,
+  ProfileEntry,
+  UserProfile,
+} from "../backend.d";
+import { PlayerTag } from "../backend.d";
 import type { Player as LocalPlayer } from "../data/dummyData";
 import { backendPlayerToLocal } from "../utils/playerUtils";
 import { useActor } from "./useActor";
+import { useAuth } from "./useAuth";
+
+export { PlayerTag };
 
 export function useApprovedPlayers() {
   const { actor, isFetching } = useActor();
@@ -70,6 +79,22 @@ export function usePendingApplications() {
   });
 }
 
+export function useAllApplicationsWithPrincipals() {
+  const { actor, isFetching } = useActor();
+  return useQuery<any[]>({
+    queryKey: ["allApplicationsWithPrincipals"],
+    queryFn: async () => {
+      if (!actor) return [];
+      try {
+        return await (actor as any).listAllApplicationsWithPrincipals();
+      } catch {
+        return [];
+      }
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
 type SubmitApplicationParams = [
   username: string,
   discord: string | null,
@@ -112,6 +137,9 @@ export function useReviewApplication() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["pendingApplications"] });
       queryClient.invalidateQueries({ queryKey: ["approvedPlayers"] });
+      queryClient.invalidateQueries({
+        queryKey: ["allApplicationsWithPrincipals"],
+      });
     },
   });
 }
@@ -126,7 +154,77 @@ export function useDeletePlayer() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["approvedPlayers"] });
+      queryClient.invalidateQueries({
+        queryKey: ["allApplicationsWithPrincipals"],
+      });
     },
+  });
+}
+
+export function useEditPlayer() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      principal,
+      playerData,
+    }: { principal: any; playerData: any }) => {
+      if (!actor) throw new Error("Not connected");
+      return actor.editPlayer(principal, playerData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["approvedPlayers"] });
+      queryClient.invalidateQueries({
+        queryKey: ["allApplicationsWithPrincipals"],
+      });
+    },
+  });
+}
+
+export function useBanUser() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (principal: any) => {
+      if (!actor) throw new Error("Not connected");
+      return (actor as any).banUser(principal);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bannedUsers"] });
+      queryClient.invalidateQueries({
+        queryKey: ["allApplicationsWithPrincipals"],
+      });
+    },
+  });
+}
+
+export function useUnbanUser() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (principal: any) => {
+      if (!actor) throw new Error("Not connected");
+      return (actor as any).unbanUser(principal);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bannedUsers"] });
+    },
+  });
+}
+
+export function useBannedUsers() {
+  const { actor, isFetching } = useActor();
+  return useQuery<any[]>({
+    queryKey: ["bannedUsers"],
+    queryFn: async () => {
+      if (!actor) return [];
+      try {
+        return await (actor as any).getBannedUsers();
+      } catch {
+        return [];
+      }
+    },
+    enabled: !!actor && !isFetching,
   });
 }
 
@@ -146,6 +244,70 @@ export function useRevokeTester() {
     mutationFn: async (principal: any) => {
       if (!actor) throw new Error("Not connected");
       return actor.revokeTesterRole(principal);
+    },
+  });
+}
+
+export function useAllProfiles() {
+  const { actor, isFetching } = useActor();
+  return useQuery<ProfileEntry[]>({
+    queryKey: ["allProfiles"],
+    queryFn: async () => {
+      if (!actor) return [];
+      try {
+        return await (actor as any).getAllProfiles();
+      } catch {
+        return [];
+      }
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useCallerProfile() {
+  const { actor, isFetching: actorFetching } = useActor();
+  const { isLoggedIn } = useAuth();
+  return useQuery<UserProfile | null>({
+    queryKey: ["callerProfile"],
+    queryFn: async () => {
+      if (!actor) return null;
+      try {
+        return await actor.getCallerUserProfile();
+      } catch {
+        return null;
+      }
+    },
+    enabled: isLoggedIn && !!actor && !actorFetching,
+  });
+}
+
+export function useSaveUserProfile() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (profile: UserProfile) => {
+      if (!actor) throw new Error("Not connected");
+      return actor.saveCallerUserProfile(profile);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["callerProfile"] });
+    },
+  });
+}
+
+export function useAssignPlayerTags() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      principal,
+      tags,
+    }: { principal: any; tags: PlayerTag[] }) => {
+      if (!actor) throw new Error("Not connected");
+      return (actor as any).assignPlayerTags(principal, tags);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["allProfiles"] });
     },
   });
 }

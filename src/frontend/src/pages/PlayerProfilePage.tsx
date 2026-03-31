@@ -1,9 +1,11 @@
 import { Link, useParams } from "@tanstack/react-router";
+import { useMemo } from "react";
 import GamemodeIcon from "../components/GamemodeIcon";
+import { TagBadge } from "../components/LeaderboardRow";
 import TierBadge from "../components/TierBadge";
 import { GAMEMODES } from "../data/dummyData";
 import type { GamemodeId } from "../data/dummyData";
-import { usePlayerByUsername } from "../hooks/useQueries";
+import { useAllProfiles, usePlayerByUsername } from "../hooks/useQueries";
 
 function getAvatarColors(username: string): [string, string] {
   const palettes: Array<[string, string]> = [
@@ -19,6 +21,12 @@ function getAvatarColors(username: string): [string, string] {
 export default function PlayerProfilePage() {
   const { username } = useParams({ from: "/players/$username" });
   const { data: player, isLoading } = usePlayerByUsername(username);
+  const { data: profiles = [] } = useAllProfiles();
+
+  const tags = useMemo(() => {
+    const entry = profiles.find((p) => p.name === username);
+    return entry?.tags ?? [];
+  }, [profiles, username]);
 
   if (isLoading) {
     return (
@@ -114,6 +122,13 @@ export default function PlayerProfilePage() {
                   {player.username}
                 </h1>
               </div>
+              {tags.length > 0 && (
+                <div className="flex items-center gap-2 flex-wrap mt-2 justify-center sm:justify-start">
+                  {tags.map((tag) => (
+                    <TagBadge key={tag} tag={tag} />
+                  ))}
+                </div>
+              )}
               {player.discord && (
                 <div className="flex items-center gap-2 mt-2 justify-center sm:justify-start">
                   <span className="text-sm" style={{ color: "#9AA3B2" }}>

@@ -30,6 +30,16 @@ export interface UserProfile {
     name: string;
     role: string;
 }
+export interface ProfileEntry {
+    principal: Principal;
+    name: string;
+    tags: PlayerTag[];
+}
+export interface ApplicationEntry {
+    principal: Principal;
+    application: Application;
+    submitterTags: PlayerTag[];
+}
 export enum ApplicationStatus {
     pending = "pending",
     approved = "approved",
@@ -69,9 +79,19 @@ export enum UserRole {
     user = "user",
     guest = "guest"
 }
+export enum PlayerTag {
+    player = "player",
+    tierTester = "tierTester",
+    experienced = "experienced",
+    new_ = "new_"
+}
 export interface backendInterface {
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     assignTesterRole(user: Principal): Promise<void>;
+    assignPlayerTags(target: Principal, tags: PlayerTag[]): Promise<void>;
+    banUser(target: Principal): Promise<void>;
+    unbanUser(target: Principal): Promise<void>;
+    getBannedUsers(): Promise<Principal[]>;
     deletePlayer(targetPlayer: Principal): Promise<void>;
     editPlayer(targetPlayer: Principal, playerData: Player): Promise<void>;
     getApplication(userToReview: Principal): Promise<Application>;
@@ -82,9 +102,13 @@ export interface backendInterface {
     getLeaderboard(): Promise<Array<Player>>;
     getOwnedApplications(): Promise<Array<Application>>;
     getPlayerByUsername(username: string): Promise<Player>;
+    getPlayerTags(target: Principal): Promise<PlayerTag[]>;
+    getProfileEntry(target: Principal): Promise<ProfileEntry | null>;
+    getAllProfiles(): Promise<Array<ProfileEntry>>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     isCallerAdmin(): Promise<boolean>;
     listAllApprovedPlayers(): Promise<Array<Player>>;
+    listAllApplicationsWithPrincipals(): Promise<Array<ApplicationEntry>>;
     listAllPendingApplications(): Promise<Array<Application>>;
     listAllUsernames(): Promise<Array<string>>;
     reviewApplication(userToReview: Principal, approve: boolean): Promise<void>;

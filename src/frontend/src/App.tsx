@@ -11,12 +11,14 @@ import {
 } from "@tanstack/react-router";
 import Footer from "./components/Footer";
 import Navbar from "./components/Navbar";
+import ProfileSetupModal from "./components/ProfileSetupModal";
 import { AuthProvider } from "./hooks/useAuth";
 import AdminPage from "./pages/AdminPage";
 import GamemodePage from "./pages/GamemodePage";
 import GamemodesPage from "./pages/GamemodesPage";
 import HomePage from "./pages/HomePage";
 import LeaderboardPage from "./pages/LeaderboardPage";
+import MyProfilePage from "./pages/MyProfilePage";
 import PlayerProfilePage from "./pages/PlayerProfilePage";
 import TesterPage from "./pages/TesterPage";
 
@@ -35,6 +37,7 @@ function Layout() {
         </main>
         <Footer />
       </div>
+      <ProfileSetupModal />
       <Toaster />
     </AuthProvider>
   );
@@ -84,6 +87,12 @@ const adminRoute = createRoute({
   component: AdminPage,
 });
 
+const profileRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/profile",
+  component: MyProfilePage,
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   gamemodesRoute,
@@ -92,6 +101,7 @@ const routeTree = rootRoute.addChildren([
   playerRoute,
   testerRoute,
   adminRoute,
+  profileRoute,
 ]);
 
 const router = createRouter({ routeTree });

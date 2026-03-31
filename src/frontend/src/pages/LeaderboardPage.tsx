@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import type { PlayerTag } from "../backend.d";
 import GamemodeIcon from "../components/GamemodeIcon";
 import LeaderboardRow from "../components/LeaderboardRow";
 import OverallPlayerCard from "../components/OverallPlayerCard";
 import SectionHeader from "../components/SectionHeader";
 import { GAMEMODES, TIER_ORDER } from "../data/dummyData";
 import type { GamemodeId, Tier } from "../data/dummyData";
-import { useApprovedPlayers } from "../hooks/useQueries";
+import { useAllProfiles, useApprovedPlayers } from "../hooks/useQueries";
 
 const SKELETON_KEYS = ["sk-1", "sk-2", "sk-3", "sk-4", "sk-5", "sk-6"];
 
@@ -45,6 +46,15 @@ export default function LeaderboardPage() {
     "overall",
   );
   const { data: players = [], isLoading } = useApprovedPlayers();
+  const { data: profiles = [] } = useAllProfiles();
+
+  const tagsByUsername = useMemo(() => {
+    const map: Record<string, PlayerTag[]> = {};
+    for (const p of profiles) {
+      map[p.name] = p.tags;
+    }
+    return map;
+  }, [profiles]);
 
   const rankedPlayers =
     selectedMode === "overall"
@@ -219,6 +229,7 @@ export default function LeaderboardPage() {
                   player={player}
                   bestTier={tier}
                   index={i + 1}
+                  tags={tagsByUsername[player.username] ?? []}
                 />
               ) : (
                 <LeaderboardRow
@@ -229,6 +240,7 @@ export default function LeaderboardPage() {
                   modeId={selectedMode}
                   modeName={selectedGamemode?.name}
                   index={i + 1}
+                  tags={tagsByUsername[player.username] ?? []}
                 />
               ),
             )}

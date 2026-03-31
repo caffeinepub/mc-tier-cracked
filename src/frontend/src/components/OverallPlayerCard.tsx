@@ -1,13 +1,16 @@
 import { Link } from "@tanstack/react-router";
+import type { PlayerTag } from "../backend.d";
 import { GAMEMODES, getTierColor } from "../data/dummyData";
 import type { Player, Tier } from "../data/dummyData";
 import GamemodeIcon from "./GamemodeIcon";
+import { TagBadge } from "./LeaderboardRow";
 
 interface OverallPlayerCardProps {
   rank: number;
   player: Player;
   bestTier: Tier;
   index: number;
+  tags?: PlayerTag[];
 }
 
 function getAvatarColors(username: string): [string, string] {
@@ -26,11 +29,13 @@ export default function OverallPlayerCard({
   player,
   bestTier,
   index,
+  tags = [],
 }: OverallPlayerCardProps) {
   const [c1, c2] = getAvatarColors(player.username);
   const isTop3 = rank <= 3;
   const rankColors = ["#FFD700", "#C0C0C0", "#CD7F32"];
   const rankedModes = GAMEMODES.filter((gm) => player.ranks[gm.id]);
+  const visibleTags = tags.slice(0, 2);
 
   return (
     <Link
@@ -102,8 +107,8 @@ export default function OverallPlayerCard({
         {player.username.charAt(0).toUpperCase()}
       </div>
 
-      {/* Username */}
-      <div style={{ flexShrink: 0, width: "100px" }}>
+      {/* Username + tags */}
+      <div style={{ flexShrink: 0, width: "110px" }}>
         <span
           style={{
             fontFamily: "BricolageGrotesque",
@@ -118,7 +123,14 @@ export default function OverallPlayerCard({
         >
           {player.username}
         </span>
-        {player.testerVerified && (
+        {visibleTags.length > 0 && (
+          <div className="flex items-center gap-0.5 flex-wrap mt-0.5">
+            {visibleTags.map((tag) => (
+              <TagBadge key={tag} tag={tag} />
+            ))}
+          </div>
+        )}
+        {player.testerVerified && visibleTags.length === 0 && (
           <span style={{ fontSize: "9px", color: "#23D7FF", lineHeight: 1 }}>
             ✓ Verified
           </span>

@@ -1,5 +1,12 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { FlaskConical, LogOut, Menu, ShieldCheck, X } from "lucide-react";
+import {
+  FlaskConical,
+  LogOut,
+  Menu,
+  ShieldCheck,
+  UserCircle,
+  X,
+} from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "../hooks/useAuth";
 
@@ -45,6 +52,7 @@ export default function Navbar() {
   const badge = role ? ROLE_BADGE[role] : null;
 
   const extraLinks = [
+    ...(isLoggedIn ? [{ label: "MY PROFILE", href: "/profile" as const }] : []),
     ...(role === "tester" || role === "admin"
       ? [{ label: "TESTER", href: "/tester" as const }]
       : []),
@@ -117,6 +125,11 @@ export default function Navbar() {
                     <ShieldCheck size={12} />
                     {link.label}
                   </span>
+                ) : link.label === "MY PROFILE" ? (
+                  <span className="flex items-center gap-1">
+                    <UserCircle size={12} />
+                    {link.label}
+                  </span>
                 ) : (
                   link.label
                 )}
@@ -127,7 +140,20 @@ export default function Navbar() {
           <div className="flex items-center gap-3">
             {isLoggedIn ? (
               <div className="hidden md:flex items-center gap-3">
-                <div className="flex items-center gap-2">
+                <Link
+                  to="/profile"
+                  data-ocid="nav.link"
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all duration-200"
+                  style={{ textDecoration: "none" }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLAnchorElement).style.background =
+                      "rgba(35,215,255,0.07)";
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLAnchorElement).style.background =
+                      "transparent";
+                  }}
+                >
                   {badge && (
                     <span
                       className="px-2 py-0.5 rounded-full text-xs font-bold tracking-widest"
@@ -147,7 +173,7 @@ export default function Navbar() {
                   >
                     {shortPrincipal}
                   </span>
-                </div>
+                </Link>
                 <button
                   type="button"
                   data-ocid="nav.button"
@@ -250,12 +276,15 @@ export default function Navbar() {
                   {badge.label}
                 </span>
               )}
-              <span
+              <Link
+                to="/profile"
+                data-ocid="nav.link"
                 className="text-xs"
                 style={{ color: "#9AA3B2", fontFamily: "monospace" }}
+                onClick={() => setMobileOpen(false)}
               >
                 {shortPrincipal}
-              </span>
+              </Link>
               <button
                 type="button"
                 data-ocid="nav.button"

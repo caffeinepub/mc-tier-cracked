@@ -37,13 +37,21 @@ actor {
     #lt3;
     #lt4;
     #lt5;
-    #none; // Default tier
+    #none;
   };
 
   type ApplicationStatus = {
     #pending;
     #approved;
     #rejected;
+  };
+
+  // Tags that admin can assign to players
+  type PlayerTag = {
+    #player;
+    #tierTester;
+    #experienced;
+    #new_;
   };
 
   type Player = {
@@ -71,15 +79,32 @@ actor {
     role : Text; // "Admin", "Tester", or "User"
   };
 
+  // Profile with principal for leaderboard display
+  public type ProfileEntry = {
+    principal : Principal.Principal;
+    name : Text;
+    tags : [PlayerTag];
+  };
+
+  // Application entry with principal for admin view
+  public type ApplicationEntry = {
+    principal : Principal.Principal;
+    application : Application;
+    submitterTags : [PlayerTag];
+  };
+
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
 
   let applications = Map.empty<Principal.Principal, Application>();
-  let playerUsernames = Map.empty<Text, Principal.Principal>(); // Maps usernames to principals
+  let playerUsernames = Map.empty<Text, Principal.Principal>();
   let userProfiles = Map.empty<Principal.Principal, UserProfile>();
-  let testerRoles = Map.empty<Principal.Principal, Bool>(); // Track tester role separately
+  let testerRoles = Map.empty<Principal.Principal, Bool>();
+  let playerTags = Map.empty<Principal.Principal, [PlayerTag]>();
+  let bannedUsers = Map.empty<Principal.Principal, Bool>();
+  // Maps profile usernames to principals for uniqueness enforcement
+  let profileUsernames = Map.empty<Text, Principal.Principal>();
 
-  // Helper function to check if user is a tester
   func isTester(caller : Principal.Principal) : Bool {
     switch (testerRoles.get(caller)) {
       case (?isTester) { isTester };
@@ -87,9 +112,15 @@ actor {
     };
   };
 
-  // Helper function to check if user has tester or admin role
   func isTesterOrAdmin(caller : Principal.Principal) : Bool {
     AccessControl.isAdmin(accessControlState, caller) or isTester(caller);
+  };
+
+  func isBanned(user : Principal.Principal) : Bool {
+    switch (bannedUsers.get(user)) {
+      case (?b) { b };
+      case (null) { false };
+    };
   };
 
   // Admin function to assign tester role
@@ -108,7 +139,102 @@ actor {
     testerRoles.remove(user);
   };
 
-  // User profile management (required by frontend)
+  // Admin bans a user (prevents leaderboard appearance)
+  public shared ({ caller }) func banUser(target : Principal.Principal) : async () {
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Only admins can ban users");
+    };
+    bannedUsers.add(target, true);
+  };
+
+  // Admin unbans a user
+  public shared ({ caller }) func unbanUser(target : Principal.Principal) : async () {
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Only admins can unban users");
+    };
+    bannedUsers.remove(target);
+  };
+
+  // Admin views all banned users
+  public query ({ caller }) func getBannedUsers() : async [Principal.Principal] {
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Only admins can view banned users");
+    };
+    let list = List.empty<Principal.Principal>();
+    for (entry in bannedUsers.entries()) {
+      if (entry.1) { list.add(entry.0) };
+    };
+    list.toArray();
+  };
+
+  // Admin assigns tags to a player by principal
+  public shared ({ caller }) func assignPlayerTags(target : Principal.Principal, tags : [PlayerTag]) : async () {
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Only admins can assign tags");
+    };
+    playerTags.add(target, tags);
+  };
+
+  // Public - get tags for a player
+  public query func getPlayerTags(target : Principal.Principal) : async [PlayerTag] {
+    switch (playerTags.get(target)) {
+      case (?tags) { tags };
+      case (null) { [] };
+    };
+  };
+
+  // Public - get all user profiles with their tags (for leaderboard)
+  public query func getAllProfiles() : async [ProfileEntry] {
+    let entries = List.empty<ProfileEntry>();
+    for (entry in userProfiles.entries()) {
+      let tags = switch (playerTags.get(entry.0)) {
+        case (?t) { t };
+        case (null) { [] };
+      };
+      entries.add({
+        principal = entry.0;
+        name = entry.1.name;
+        tags;
+      });
+    };
+    entries.toArray();
+  };
+
+  // Get profile entry for a specific principal
+  public query func getProfileEntry(target : Principal.Principal) : async ?ProfileEntry {
+    switch (userProfiles.get(target)) {
+      case (?profile) {
+        let tags = switch (playerTags.get(target)) {
+          case (?t) { t };
+          case (null) { [] };
+        };
+        ?{ principal = target; name = profile.name; tags };
+      };
+      case (null) { null };
+    };
+  };
+
+  // Admin: list all applications with their principals and submitter tags
+  public query ({ caller }) func listAllApplicationsWithPrincipals() : async [ApplicationEntry] {
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Only admins can view all applications");
+    };
+    let entries = List.empty<ApplicationEntry>();
+    for (entry in applications.entries()) {
+      let submitterTags = switch (playerTags.get(entry.0)) {
+        case (?t) { t };
+        case (null) { [] };
+      };
+      entries.add({
+        principal = entry.0;
+        application = entry.1;
+        submitterTags;
+      });
+    };
+    entries.toArray();
+  };
+
+  // User profile management
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
     if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
       Runtime.trap("Unauthorized: Only users can view profiles");
@@ -123,9 +249,28 @@ actor {
     userProfiles.get(user);
   };
 
+  // Save profile with username uniqueness enforcement
   public shared ({ caller }) func saveCallerUserProfile(profile : UserProfile) : async () {
     if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
       Runtime.trap("Unauthorized: Only users can save profiles");
+    };
+    // Check username uniqueness (allow updating own profile)
+    switch (profileUsernames.get(profile.name)) {
+      case (?existing) {
+        if (not Principal.equal(existing, caller)) {
+          Runtime.trap("Username already taken");
+        };
+      };
+      case (null) {
+        // Remove old username mapping if exists
+        switch (userProfiles.get(caller)) {
+          case (?oldProfile) {
+            profileUsernames.remove(oldProfile.name);
+          };
+          case (null) {};
+        };
+        profileUsernames.add(profile.name, caller);
+      };
     };
     userProfiles.add(caller, profile);
   };
@@ -186,7 +331,6 @@ actor {
     };
   };
 
-  // Admins can view any application, testers can only view their own
   public query ({ caller }) func getApplication(userToReview : Principal.Principal) : async Application {
     if (not isTesterOrAdmin(caller)) {
       Runtime.trap("Unauthorized: Only testers and admins can view applications");
@@ -194,7 +338,6 @@ actor {
     
     switch (applications.get(userToReview)) {
       case (?application) {
-        // Testers can only view their own applications
         if (not AccessControl.isAdmin(accessControlState, caller) and not Principal.equal(caller, userToReview)) {
           Runtime.trap("Unauthorized: Testers can only view their own applications");
         };
@@ -204,18 +347,16 @@ actor {
     };
   };
 
-  // Public - anyone can view the leaderboard (approved players only)
-  public query ({ caller }) func getLeaderboard() : async [Player] {
+  public query func getLeaderboard() : async [Player] {
     let approvedPlayers = List.empty<Player>();
-    for (application in applications.values()) {
-      if (application.status == #approved) {
-        approvedPlayers.add(application.player);
+    for (entry in applications.entries()) {
+      if (entry.1.status == #approved and not isBanned(entry.0)) {
+        approvedPlayers.add(entry.1.player);
       };
     };
     approvedPlayers.toArray();
   };
 
-  // Only admins can edit players
   public shared ({ caller }) func editPlayer(targetPlayer : Principal.Principal, playerData : Player) : async () {
     if (not AccessControl.isAdmin(accessControlState, caller)) {
       Runtime.trap("Unauthorized: Only admins can edit players");
@@ -223,12 +364,11 @@ actor {
     
     switch (applications.get(targetPlayer)) {
       case (?application) {
-        // Remove old username mapping
         playerUsernames.remove(application.player.username);
         
         let updatedApplication : Application = {
           player = playerData;
-          status = #approved; // Editing always keeps it approved
+          status = #approved;
           reviewer = ?caller;
         };
         applications.add(targetPlayer, updatedApplication);
@@ -238,7 +378,6 @@ actor {
     };
   };
 
-  // Only admins can delete players
   public shared ({ caller }) func deletePlayer(targetPlayer : Principal.Principal) : async () {
     if (not AccessControl.isAdmin(accessControlState, caller)) {
       Runtime.trap("Unauthorized: Only admins can delete players");
@@ -253,43 +392,40 @@ actor {
     };
   };
 
-  // Public - anyone can filter by gamemode
-  public query ({ caller }) func getByGamemode(gamemode : Gamemode) : async [Player] {
+  public query func getByGamemode(gamemode : Gamemode) : async [Player] {
     let filteredPlayers = List.empty<Player>();
 
-    for (application in applications.values()) {
-      if (application.status == #approved) {
+    for (entry in applications.entries()) {
+      if (entry.1.status == #approved and not isBanned(entry.0)) {
         let matches = switch (gamemode) {
-          case (#axePvp) { application.player.axePvpTier != #none };
-          case (#swordPvp) { application.player.swordPvpTier != #none };
-          case (#crystalPvp) { application.player.crystalPvpTier != #none };
-          case (#uhc) { application.player.uhcTier != #none };
-          case (#nethpot) { application.player.nethpotTier != #none };
-          case (#smpPvp) { application.player.smpPvpTier != #none };
-          case (#macePvp) { application.player.macePvpTier != #none };
-          case (#cartPvp) { application.player.cartPvpTier != #none };
+          case (#axePvp) { entry.1.player.axePvpTier != #none };
+          case (#swordPvp) { entry.1.player.swordPvpTier != #none };
+          case (#crystalPvp) { entry.1.player.crystalPvpTier != #none };
+          case (#uhc) { entry.1.player.uhcTier != #none };
+          case (#nethpot) { entry.1.player.nethpotTier != #none };
+          case (#smpPvp) { entry.1.player.smpPvpTier != #none };
+          case (#macePvp) { entry.1.player.macePvpTier != #none };
+          case (#cartPvp) { entry.1.player.cartPvpTier != #none };
           case (#all) { true };
         };
         if (matches) {
-          filteredPlayers.add(application.player);
+          filteredPlayers.add(entry.1.player);
         };
       };
     };
     filteredPlayers.toArray();
   };
 
-  // Public - anyone can filter by tier
-  public query ({ caller }) func getByTier(tier : Tier) : async [Player] {
+  public query func getByTier(tier : Tier) : async [Player] {
     let filteredPlayers = List.empty<Player>();
-    for (application in applications.values()) {
-      if (application.status == #approved and application.player.overallTier == tier) {
-        filteredPlayers.add(application.player);
+    for (entry in applications.entries()) {
+      if (entry.1.status == #approved and not isBanned(entry.0) and entry.1.player.overallTier == tier) {
+        filteredPlayers.add(entry.1.player);
       };
     };
     filteredPlayers.toArray();
   };
 
-  // Testers and admins can view their own applications
   public query ({ caller }) func getOwnedApplications() : async [Application] {
     if (not isTesterOrAdmin(caller)) {
       Runtime.trap("Unauthorized: Only testers and admins can view applications");
@@ -304,10 +440,10 @@ actor {
     ownedApps.toArray();
   };
 
-  // Public - anyone can search by username (approved players only)
-  public query ({ caller }) func getPlayerByUsername(username : Text) : async Player {
+  public query func getPlayerByUsername(username : Text) : async Player {
     switch (playerUsernames.get(username)) {
       case (?user) {
+        if (isBanned(user)) { Runtime.trap("Player not found") };
         switch (applications.get(user)) {
           case (?application) {
             if (application.status == #approved) {
@@ -323,13 +459,12 @@ actor {
     };
   };
 
-  // Public - anyone can list all usernames (approved players only)
-  public query ({ caller }) func listAllUsernames() : async [Text] {
+  public query func listAllUsernames() : async [Text] {
     let approvedUsernames = List.empty<Text>();
     for (entry in playerUsernames.entries()) {
       switch (applications.get(entry.1)) {
         case (?application) {
-          if (application.status == #approved) {
+          if (application.status == #approved and not isBanned(entry.1)) {
             approvedUsernames.add(entry.0);
           };
         };
@@ -339,18 +474,16 @@ actor {
     approvedUsernames.toArray();
   };
 
-  // Public - anyone can list all approved players
-  public query ({ caller }) func listAllApprovedPlayers() : async [Player] {
+  public query func listAllApprovedPlayers() : async [Player] {
     let approvedPlayers = List.empty<Player>();
-    for (application in applications.values()) {
-      if (application.status == #approved) {
-        approvedPlayers.add(application.player);
+    for (entry in applications.values()) {
+      if (entry.status == #approved) {
+        approvedPlayers.add(entry.player);
       };
     };
     approvedPlayers.toArray();
   };
 
-  // Admin-only - list pending applications
   public query ({ caller }) func listAllPendingApplications() : async [Application] {
     if (not AccessControl.isAdmin(accessControlState, caller)) {
       Runtime.trap("Unauthorized: Only admins can view pending applications");
