@@ -54,7 +54,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const value: AuthContextType = {
     isLoggedIn,
-    isLoading: isInitializing || actorFetching,
+    isLoading:
+      isInitializing || actorFetching || (isLoggedIn && roleQuery.isLoading),
     role: isLoggedIn ? (roleQuery.data ?? null) : null,
     login,
     logout: clear,
