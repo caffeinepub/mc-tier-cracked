@@ -22,9 +22,6 @@ actor {
     #all;
   };
 
-  // V1 tier type — kept for stable-variable upgrade compatibility.
-  // The old canister stored Application values using this type.
-  // Removing or changing it would break the implicit stable Map.
   type TierV1 = {
     #ht1; #ht2; #ht3; #ht4; #ht5;
     #mt1; #mt2; #mt3; #mt4; #mt5;
@@ -32,7 +29,6 @@ actor {
     #none;
   };
 
-  // New extended tier type with HT Low variants
   type Tier = {
     #ht1; #ht1low;
     #lt1; #mt1;
@@ -60,7 +56,6 @@ actor {
     #new_;
   };
 
-  // V1 Player — uses TierV1, matches the stored stable type exactly
   type PlayerV1 = {
     username : Text;
     discord : ?Text;
@@ -81,7 +76,6 @@ actor {
     reviewer : ?Principal.Principal;
   };
 
-  // Current Player — uses new Tier
   type Player = {
     username : Text;
     discord : ?Text;
@@ -122,15 +116,19 @@ actor {
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
 
-  // --- Stable storage ---
-  // `applications` keeps TierV1 so the implicit stable Map is compatible
-  // with what is already stored on-chain. Do NOT change its type.
+  // --- Stable storage buffers (survive upgrades) ---
+  stable var stableUserProfiles : [(Principal.Principal, UserProfile)] = [];
+  stable var stableProfileUsernameIndex : [(Text, Principal.Principal)] = [];
+  stable var stableApplicationsV2 : [(Principal.Principal, Application)] = [];
+  stable var stableApplicationsV1 : [(Principal.Principal, ApplicationV1)] = [];
+  stable var stablePlayerUsernames : [(Text, Principal.Principal)] = [];
+  stable var stableTesterRoles : [(Principal.Principal, Bool)] = [];
+  stable var stablePlayerTags : [(Principal.Principal, [PlayerTag])] = [];
+  stable var stableBannedUsers : [(Principal.Principal, Bool)] = [];
+
+  // --- Live working maps ---
   let applications = Map.empty<Principal.Principal, ApplicationV1>();
-
-  // `applicationsV2` uses the new extended Tier. Starts empty on first
-  // deploy, gets populated via postupgrade migration below.
   let applicationsV2 = Map.empty<Principal.Principal, Application>();
-
   let playerUsernames = Map.empty<Text, Principal.Principal>();
   let userProfiles = Map.empty<Principal.Principal, UserProfile>();
   let profileUsernameIndex = Map.empty<Text, Principal.Principal>();
@@ -138,7 +136,20 @@ actor {
   let playerTags = Map.empty<Principal.Principal, [PlayerTag]>();
   let bannedUsers = Map.empty<Principal.Principal, Bool>();
 
-  // Migrate a TierV1 value to the new Tier (all old cases exist unchanged)
+  // --- Restore from stable arrays on first load after upgrade ---
+  private func restoreFromStable() {
+    for ((k, v) in stableUserProfiles.vals()) { userProfiles.add(k, v) };
+    for ((k, v) in stableProfileUsernameIndex.vals()) { profileUsernameIndex.add(k, v) };
+    for ((k, v) in stableApplicationsV2.vals()) { applicationsV2.add(k, v) };
+    for ((k, v) in stableApplicationsV1.vals()) { applications.add(k, v) };
+    for ((k, v) in stablePlayerUsernames.vals()) { playerUsernames.add(k, v) };
+    for ((k, v) in stableTesterRoles.vals()) { testerRoles.add(k, v) };
+    for ((k, v) in stablePlayerTags.vals()) { playerTags.add(k, v) };
+    for ((k, v) in stableBannedUsers.vals()) { bannedUsers.add(k, v) };
+  };
+
+  restoreFromStable();
+
   func migrateTier(t : TierV1) : Tier {
     switch t {
       case (#ht1) { #ht1 };
@@ -176,9 +187,44 @@ actor {
     };
   };
 
-  // On upgrade, copy any data still in the old map into applicationsV2.
-  // After migration `applications` is effectively empty going forward.
+  // Serialize live maps -> stable arrays before upgrade
+  system func preupgrade() {
+    let upProfiles = List.empty<(Principal.Principal, UserProfile)>();
+    for (entry in userProfiles.entries()) { upProfiles.add(entry) };
+    stableUserProfiles := upProfiles.toArray();
+
+    let upUsernameIndex = List.empty<(Text, Principal.Principal)>();
+    for (entry in profileUsernameIndex.entries()) { upUsernameIndex.add(entry) };
+    stableProfileUsernameIndex := upUsernameIndex.toArray();
+
+    let upAppsV2 = List.empty<(Principal.Principal, Application)>();
+    for (entry in applicationsV2.entries()) { upAppsV2.add(entry) };
+    stableApplicationsV2 := upAppsV2.toArray();
+
+    let upAppsV1 = List.empty<(Principal.Principal, ApplicationV1)>();
+    for (entry in applications.entries()) { upAppsV1.add(entry) };
+    stableApplicationsV1 := upAppsV1.toArray();
+
+    let upPlayerUsernames = List.empty<(Text, Principal.Principal)>();
+    for (entry in playerUsernames.entries()) { upPlayerUsernames.add(entry) };
+    stablePlayerUsernames := upPlayerUsernames.toArray();
+
+    let upTesterRoles = List.empty<(Principal.Principal, Bool)>();
+    for (entry in testerRoles.entries()) { upTesterRoles.add(entry) };
+    stableTesterRoles := upTesterRoles.toArray();
+
+    let upPlayerTags = List.empty<(Principal.Principal, [PlayerTag])>();
+    for (entry in playerTags.entries()) { upPlayerTags.add(entry) };
+    stablePlayerTags := upPlayerTags.toArray();
+
+    let upBanned = List.empty<(Principal.Principal, Bool)>();
+    for (entry in bannedUsers.entries()) { upBanned.add(entry) };
+    stableBannedUsers := upBanned.toArray();
+  };
+
+  // After upgrade: restore from stable arrays + migrate V1 applications
   system func postupgrade() {
+    // Migrate any V1 applications not yet in V2
     for ((principal, appV1) in applications.entries()) {
       if (not applicationsV2.containsKey(principal)) {
         let migrated : Application = {
@@ -669,4 +715,5 @@ actor {
       };
     };
   };
+
 };
