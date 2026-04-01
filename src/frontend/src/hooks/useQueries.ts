@@ -299,6 +299,10 @@ export function useSaveUserProfile() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["callerProfile"] });
+      queryClient.invalidateQueries({ queryKey: ["callerProfileEntry"] });
+      queryClient.invalidateQueries({ queryKey: ["approvedPlayers"] });
+      queryClient.invalidateQueries({ queryKey: ["allProfiles"] });
+      queryClient.invalidateQueries({ queryKey: ["player"] });
     },
   });
 }
