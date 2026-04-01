@@ -1,6 +1,10 @@
 import { Link } from "@tanstack/react-router";
+import { useApprovedPlayers } from "../hooks/useQueries";
 
 export default function HeroSection() {
+  const { data: players = [] } = useApprovedPlayers();
+  const playerCount = players.length;
+
   return (
     <section
       className="relative overflow-hidden flex items-center justify-center"
@@ -154,9 +158,9 @@ export default function HeroSection() {
 
         <div className="mt-16 flex flex-wrap justify-center gap-12">
           {[
-            { value: "15+", label: "Ranked Players" },
-            { value: "7", label: "Gamemodes" },
-            { value: "15", label: "Tier Levels" },
+            { value: String(playerCount), label: "Ranked Players" },
+            { value: "8", label: "Gamemodes" },
+            { value: "20", label: "Tier Levels" },
           ].map((stat) => (
             <div key={stat.label} className="text-center">
               <div
