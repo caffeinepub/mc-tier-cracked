@@ -8,7 +8,11 @@ import { useCallerProfile, useSaveUserProfile } from "../hooks/useQueries";
 export default function ProfileSetupModal() {
   const { isLoggedIn } = useAuth();
   const { actor, isFetching: actorFetching } = useActor();
-  const { data: profile, isLoading: profileLoading } = useCallerProfile();
+  const {
+    data: profile,
+    isLoading: profileLoading,
+    isFetching: profileFetching,
+  } = useCallerProfile();
   const saveMutation = useSaveUserProfile();
   const [username, setUsername] = useState("");
   const [error, setError] = useState("");
@@ -21,6 +25,7 @@ export default function ProfileSetupModal() {
     isLoggedIn &&
     actorReady &&
     !profileLoading &&
+    !profileFetching &&
     (profile === null || !hasValidUsername);
 
   // While logged in but actor/profile not yet settled, show nothing (page content loads normally)

@@ -21,20 +21,22 @@ export default function HomePage() {
     return map;
   }, [profiles]);
 
-  // Each player ranked by their best tier across all gamemodes
+  // Rank players by average tier index across all gamemodes (hidden overall score)
   const rankedPlayers = useMemo(() => {
     return players
       .map((p) => {
         const tiers = Object.values(p.ranks).filter(Boolean) as Tier[];
-        const bestTier = tiers.sort(
-          (a, b) => TIER_ORDER.indexOf(a) - TIER_ORDER.indexOf(b),
-        )[0];
-        return bestTier ? { player: p, tier: bestTier } : null;
+        if (tiers.length === 0) return null;
+        const avgScore =
+          tiers.reduce((sum, t) => sum + TIER_ORDER.indexOf(t), 0) /
+          tiers.length;
+        return { player: p, avgScore };
       })
       .filter(
-        (x): x is { player: (typeof players)[0]; tier: Tier } => x !== null,
+        (x): x is { player: (typeof players)[0]; avgScore: number } =>
+          x !== null,
       )
-      .sort((a, b) => TIER_ORDER.indexOf(a.tier) - TIER_ORDER.indexOf(b.tier));
+      .sort((a, b) => a.avgScore - b.avgScore);
   }, [players]);
 
   return (
@@ -52,7 +54,7 @@ export default function HomePage() {
         <div className="max-w-4xl mx-auto">
           <SectionHeader
             title="Player Rankings"
-            subtitle="Top ranked players — sorted by tier"
+            subtitle="Top ranked players — sorted by overall tier performance"
           />
 
           {isLoading ? (
@@ -70,12 +72,12 @@ export default function HomePage() {
             </div>
           ) : rankedPlayers.length > 0 ? (
             <div className="flex flex-col gap-1.5" data-ocid="leaderboard.list">
-              {rankedPlayers.map(({ player, tier }, i) => (
+              {rankedPlayers.map(({ player }, i) => (
                 <LeaderboardRow
                   key={player.username}
                   rank={i + 1}
                   player={player}
-                  tier={tier}
+                  ranks={player.ranks}
                   index={i + 1}
                   tags={tagsByUsername[player.username] ?? []}
                 />

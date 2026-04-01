@@ -125,6 +125,7 @@ actor {
   stable var stableTesterRoles : [(Principal.Principal, Bool)] = [];
   stable var stablePlayerTags : [(Principal.Principal, [PlayerTag])] = [];
   stable var stableBannedUsers : [(Principal.Principal, Bool)] = [];
+  stable var stableUserRoles : [(Principal.Principal, AccessControl.UserRole)] = [];
 
   // --- Live working maps ---
   let applications = Map.empty<Principal.Principal, ApplicationV1>();
@@ -146,6 +147,7 @@ actor {
     for ((k, v) in stableTesterRoles.vals()) { testerRoles.add(k, v) };
     for ((k, v) in stablePlayerTags.vals()) { playerTags.add(k, v) };
     for ((k, v) in stableBannedUsers.vals()) { bannedUsers.add(k, v) };
+    for ((k, v) in stableUserRoles.vals()) { accessControlState.userRoles.add(k, v) };
   };
 
   restoreFromStable();
@@ -220,6 +222,10 @@ actor {
     let upBanned = List.empty<(Principal.Principal, Bool)>();
     for (entry in bannedUsers.entries()) { upBanned.add(entry) };
     stableBannedUsers := upBanned.toArray();
+
+    let upUserRoles = List.empty<(Principal.Principal, AccessControl.UserRole)>();
+    for (entry in accessControlState.userRoles.entries()) { upUserRoles.add(entry) };
+    stableUserRoles := upUserRoles.toArray();
   };
 
   // After upgrade: restore from stable arrays + migrate V1 applications
@@ -354,9 +360,7 @@ actor {
   };
 
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
-      Runtime.trap("Unauthorized: Only users can view profiles");
-    };
+    if (caller.isAnonymous()) { return null };
     userProfiles.get(caller);
   };
 
@@ -368,8 +372,11 @@ actor {
   };
 
   public shared ({ caller }) func saveCallerUserProfile(profile : UserProfile) : async () {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
-      Runtime.trap("Unauthorized: Only users can save profiles");
+    if (caller.isAnonymous()) { Runtime.trap("Must be logged in") };
+    // Auto-register user if not yet in access control (e.g. after re-deployment)
+    switch (accessControlState.userRoles.get(caller)) {
+      case (null) { accessControlState.userRoles.add(caller, #user) };
+      case (?_) {};
     };
     let name = profile.name;
     if (name.size() < 3 or name.size() > 20) {

@@ -268,18 +268,24 @@ export function useAllProfiles() {
 
 export function useCallerProfile() {
   const { actor, isFetching: actorFetching } = useActor();
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, principal } = useAuth();
   return useQuery<UserProfile | null>({
-    queryKey: ["callerProfile"],
+    queryKey: ["callerProfile", principal],
     queryFn: async () => {
       if (!actor) return null;
       try {
-        return await actor.getCallerUserProfile();
+        const result = await actor.getCallerUserProfile();
+        return result ?? null;
       } catch {
         return null;
       }
     },
     enabled: isLoggedIn && !!actor && !actorFetching,
+    // Retry up to 3 times so transient backend errors don't leave username blank
+    retry: 3,
+    retryDelay: 1000,
+    // Keep previous data visible while refetching
+    placeholderData: (prev) => prev,
   });
 }
 

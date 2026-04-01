@@ -1,12 +1,18 @@
 import { Link } from "@tanstack/react-router";
 import { PlayerTag } from "../backend.d";
-import type { GamemodeId, Player, Tier } from "../data/dummyData";
-import TierBadge from "./TierBadge";
+import {
+  GAMEMODES,
+  type GamemodeId,
+  type Player,
+  type Tier,
+  getTierColor,
+} from "../data/dummyData";
+import GamemodeIcon from "./GamemodeIcon";
 
 interface LeaderboardRowProps {
   rank: number;
   player: Player;
-  tier: Tier;
+  ranks: Partial<Record<GamemodeId, Tier>>;
   modeId?: GamemodeId;
   modeName?: string;
   index: number;
@@ -73,7 +79,7 @@ export function TagBadge({ tag }: { tag: PlayerTag }) {
 export default function LeaderboardRow({
   rank,
   player,
-  tier,
+  ranks,
   modeName,
   index,
   tags = [],
@@ -82,6 +88,9 @@ export default function LeaderboardRow({
   const isTop3 = rank <= 3;
   const rankColors = ["#FFD700", "#C0C0C0", "#CD7F32"];
   const visibleTags = tags.slice(0, 2);
+
+  // Build ordered list of gamemodes this player has ranks in
+  const rankedModes = GAMEMODES.filter((gm) => ranks[gm.id]);
 
   return (
     <Link
@@ -115,6 +124,7 @@ export default function LeaderboardRow({
           "linear-gradient(#141821, #141821), linear-gradient(135deg, rgba(35,215,255,0.25), rgba(168,85,247,0.15))";
       }}
     >
+      {/* Rank number */}
       <div
         className="w-9 text-center font-bold flex-shrink-0"
         style={{
@@ -127,6 +137,7 @@ export default function LeaderboardRow({
         #{rank}
       </div>
 
+      {/* Avatar */}
       <div
         className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
         style={{
@@ -138,6 +149,7 @@ export default function LeaderboardRow({
         {player.username.charAt(0).toUpperCase()}
       </div>
 
+      {/* Username + tags */}
       <div className="flex-1 min-w-0">
         <span
           className="font-bold text-sm truncate block"
@@ -157,7 +169,47 @@ export default function LeaderboardRow({
         </div>
       </div>
 
-      <TierBadge tier={tier} size="sm" />
+      {/* Gamemode tier chips */}
+      {rankedModes.length > 0 && (
+        <div
+          className="flex items-center gap-1.5 flex-shrink-0 overflow-x-auto"
+          style={{ maxWidth: "min(55%, 360px)", scrollbarWidth: "none" }}
+        >
+          {rankedModes.map((gm) => {
+            const tier = ranks[gm.id]!;
+            const { text: tierColor } = getTierColor(tier);
+            return (
+              <div
+                key={gm.id}
+                className="flex flex-col items-center gap-0.5 flex-shrink-0"
+                title={`${gm.name}: ${tier}`}
+                style={{
+                  width: "44px",
+                  padding: "4px 2px",
+                  borderRadius: "6px",
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid rgba(255,255,255,0.07)",
+                }}
+              >
+                <GamemodeIcon id={gm.id} size={14} />
+                <span
+                  style={{
+                    fontSize: "7.5px",
+                    fontWeight: 700,
+                    color: tierColor,
+                    lineHeight: 1.2,
+                    textAlign: "center",
+                    letterSpacing: "0.01em",
+                    wordBreak: "break-all",
+                  }}
+                >
+                  {tier}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {modeName && (
         <span

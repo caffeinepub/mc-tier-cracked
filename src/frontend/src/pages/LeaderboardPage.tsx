@@ -118,12 +118,12 @@ export default function LeaderboardPage() {
           </div>
         ) : rankedPlayers.length > 0 ? (
           <div className="flex flex-col gap-1.5" data-ocid="leaderboard.list">
-            {rankedPlayers.map(({ player, tier }, i) => (
+            {rankedPlayers.map(({ player }, i) => (
               <LeaderboardRow
                 key={player.username}
                 rank={i + 1}
                 player={player}
-                tier={tier}
+                ranks={player.ranks}
                 modeId={selectedMode}
                 modeName={selectedGamemode?.name}
                 index={i + 1}
