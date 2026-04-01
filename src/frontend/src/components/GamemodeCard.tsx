@@ -4,13 +4,9 @@ import GamemodeIcon from "./GamemodeIcon";
 
 interface GamemodeCardProps {
   gamemode: Gamemode;
-  playerCount?: number;
 }
 
-export default function GamemodeCard({
-  gamemode,
-  playerCount = 0,
-}: GamemodeCardProps) {
+export default function GamemodeCard({ gamemode }: GamemodeCardProps) {
   const navigate = useNavigate();
   const isCyan = gamemode.color === "cyan";
   const borderColor = isCyan
@@ -67,9 +63,6 @@ export default function GamemodeCard({
         <p className="text-xs mb-3" style={{ color: "#9AA3B2" }}>
           {gamemode.description}
         </p>
-        <span className="text-xs font-bold" style={{ color: "#9AA3B2" }}>
-          {playerCount} players ranked
-        </span>
       </div>
       <div
         className="mt-auto px-5 py-2 rounded-full text-xs font-bold tracking-widest w-full text-center"

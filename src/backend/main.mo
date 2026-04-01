@@ -390,10 +390,41 @@ actor {
       };
       case (null) {};
     };
+    // Handle old username cleanup and player record sync
     switch (userProfiles.get(caller)) {
       case (?oldProfile) {
         if (oldProfile.name != name) {
+          // Remove old username from profile index
           profileUsernameIndex.remove(oldProfile.name);
+          // Also update the Player record in applicationsV2 if this user has one
+          switch (applicationsV2.get(caller)) {
+            case (?app) {
+              // Remove old username from playerUsernames index
+              playerUsernames.remove(oldProfile.name);
+              // Add new username to playerUsernames index
+              playerUsernames.add(name, caller);
+              // Update the player record's username
+              let updatedPlayer : Player = {
+                username = name;
+                discord = app.player.discord;
+                axePvpTier = app.player.axePvpTier;
+                swordPvpTier = app.player.swordPvpTier;
+                crystalPvpTier = app.player.crystalPvpTier;
+                uhcTier = app.player.uhcTier;
+                nethpotTier = app.player.nethpotTier;
+                smpPvpTier = app.player.smpPvpTier;
+                macePvpTier = app.player.macePvpTier;
+                cartPvpTier = app.player.cartPvpTier;
+                overallTier = app.player.overallTier;
+              };
+              applicationsV2.add(caller, {
+                player = updatedPlayer;
+                status = app.status;
+                reviewer = app.reviewer;
+              });
+            };
+            case (null) {};
+          };
         };
       };
       case (null) {};

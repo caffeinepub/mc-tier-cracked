@@ -291,13 +291,17 @@ export function useCallerProfile() {
 
 export function useSaveUserProfile() {
   const { actor } = useActor();
+  const { principal } = useAuth();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (profile: UserProfile) => {
       if (!actor) throw new Error("Not connected");
       return actor.saveCallerUserProfile(profile);
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
+      // Immediately update the cached callerProfile so navbar updates instantly
+      queryClient.setQueryData(["callerProfile", principal], variables);
+      // Invalidate all dependent queries to refetch with new username
       queryClient.invalidateQueries({ queryKey: ["callerProfile"] });
       queryClient.invalidateQueries({ queryKey: ["callerProfileEntry"] });
       queryClient.invalidateQueries({ queryKey: ["approvedPlayers"] });

@@ -1,6 +1,6 @@
 import GamemodeCard from "../components/GamemodeCard";
 import SectionHeader from "../components/SectionHeader";
-import { GAMEMODES, getPlayersForMode } from "../data/dummyData";
+import { GAMEMODES } from "../data/dummyData";
 
 export default function GamemodesPage() {
   return (
@@ -19,10 +19,7 @@ export default function GamemodesPage() {
         >
           {GAMEMODES.map((gm, i) => (
             <div key={gm.id} data-ocid={`gamemodes.item.${i + 1}`}>
-              <GamemodeCard
-                gamemode={gm}
-                playerCount={getPlayersForMode(gm.id).length}
-              />
+              <GamemodeCard gamemode={gm} />
             </div>
           ))}
         </div>
