@@ -1130,6 +1130,15 @@ export default function AdminPage() {
   const [gateOpen, setGateOpen] = useState(
     () => sessionStorage.getItem(ADMIN_GATE_KEY) === "1",
   );
+  const { actor } = useActor();
+
+  // Always re-claim admin role on mount — in case canister was redeployed (new canister
+  // has no knowledge of admin, so session-storage gate bypass would leave us as a regular user)
+  useEffect(() => {
+    if (gateOpen && actor) {
+      (actor as any).claimAdminRoleWithPassword(ADMIN_PASSWORD).catch(() => {});
+    }
+  }, [gateOpen, actor]);
 
   if (!gateOpen) {
     return <AdminGate onSuccess={() => setGateOpen(true)} />;

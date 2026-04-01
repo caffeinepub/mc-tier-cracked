@@ -1,6 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { FlaskConical, LogOut, Menu, UserCircle, X } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { useCallerProfile } from "../hooks/useQueries";
 
@@ -35,10 +35,24 @@ export default function Navbar() {
   const { isLoggedIn, role, login, logout, principal, isLoading } = useAuth();
   const { data: callerProfile } = useCallerProfile();
 
+  const localUsername = useMemo(() => {
+    if (!principal) return "";
+    try {
+      const cached = localStorage.getItem(`mc_tier_profile_${principal}`);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        return parsed?.name || "";
+      }
+    } catch {
+      /* ignore */
+    }
+    return "";
+  }, [principal]);
+
   const shortPrincipal = principal
     ? `${principal.slice(0, 5)}...${principal.slice(-3)}`
     : "";
-  const displayName = callerProfile?.name || shortPrincipal;
+  const displayName = callerProfile?.name || localUsername || shortPrincipal;
   const badge = role && role !== "admin" ? ROLE_BADGE[role] : null;
 
   const extraLinks = [
@@ -161,7 +175,7 @@ export default function Navbar() {
                     >
                       {displayName}
                     </span>
-                    {callerProfile?.name && (
+                    {(callerProfile?.name || localUsername) && (
                       <span
                         className="text-xs"
                         style={{
@@ -289,7 +303,7 @@ export default function Navbar() {
                 >
                   {displayName}
                 </span>
-                {callerProfile?.name && (
+                {(callerProfile?.name || localUsername) && (
                   <span
                     className="text-xs"
                     style={{ color: "#5A6478", fontFamily: "monospace" }}

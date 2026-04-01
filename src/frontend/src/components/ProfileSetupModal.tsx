@@ -1,12 +1,30 @@
 import { Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useActor } from "../hooks/useActor";
 import { useAuth } from "../hooks/useAuth";
 import { useCallerProfile, useSaveUserProfile } from "../hooks/useQueries";
 
+const USERNAME_RE = /^[a-zA-Z0-9_]{3,20}$/;
+
+function getLocalProfile(
+  principal: string | null,
+): { name: string; role: string } | null {
+  if (!principal) return null;
+  try {
+    const cached = localStorage.getItem(`mc_tier_profile_${principal}`);
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (parsed?.name && USERNAME_RE.test(parsed.name)) return parsed;
+    }
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
+
 export default function ProfileSetupModal() {
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, principal } = useAuth();
   const { actor, isFetching: actorFetching } = useActor();
   const {
     data: profile,
@@ -14,24 +32,39 @@ export default function ProfileSetupModal() {
     isFetching: profileFetching,
   } = useCallerProfile();
   const saveMutation = useSaveUserProfile();
-  const [username, setUsername] = useState("");
+
+  // Read localStorage directly — this is synchronous and always up-to-date
+  const localProfile = useMemo(() => getLocalProfile(principal), [principal]);
+
+  function getInitialUsername() {
+    return localProfile?.name ?? profile?.name ?? "";
+  }
+
+  const [username, setUsername] = useState(getInitialUsername);
   const [error, setError] = useState("");
 
   const actorReady = !!actor && !actorFetching;
-  // Show modal when profile is null OR when user has a profile but with an invalid/empty username
+
+  // Don't show if:
+  // 1. Not logged in
+  // 2. Actor not ready
+  // 3. Profile still loading / fetching from backend
+  // 4. localStorage already has a valid username (they've set one before)
+  // 5. Backend profile has a valid username
   const hasValidUsername =
-    profile?.name && /^[a-zA-Z0-9_]{3,20}$/.test(profile.name);
+    (profile?.name && USERNAME_RE.test(profile.name)) ||
+    (localProfile?.name && USERNAME_RE.test(localProfile.name));
+
   const shouldShow =
     isLoggedIn &&
     actorReady &&
     !profileLoading &&
     !profileFetching &&
-    (profile === null || !hasValidUsername);
+    !hasValidUsername;
 
-  // While logged in but actor/profile not yet settled, show nothing (page content loads normally)
   if (!shouldShow) return null;
 
-  const isValid = /^[a-zA-Z0-9_]{3,20}$/.test(username);
+  const isValid = USERNAME_RE.test(username);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

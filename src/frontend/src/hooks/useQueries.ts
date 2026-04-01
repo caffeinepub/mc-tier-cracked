@@ -15,6 +15,10 @@ import { useAuth } from "./useAuth";
 export { PlayerTag };
 export type { Player };
 
+function profileCacheKey(principal: string | undefined) {
+  return `mc_tier_profile_${principal ?? ""}`;
+}
+
 export function useApprovedPlayers() {
   const { actor, isFetching } = useActor();
   return useQuery<LocalPlayer[]>({
@@ -275,17 +279,80 @@ export function useCallerProfile() {
       if (!actor) return null;
       try {
         const result = await actor.getCallerUserProfile();
-        return result ?? null;
+        if (result) {
+          // Cache in localStorage so username survives fresh deploys
+          if (principal) {
+            try {
+              localStorage.setItem(
+                profileCacheKey(principal),
+                JSON.stringify(result),
+              );
+            } catch {
+              /* storage quota */
+            }
+          }
+          return result;
+        }
+        // Backend returned null — could be a fresh deployment
+        // Try to auto-re-register from localStorage
+        if (principal) {
+          const cached = localStorage.getItem(profileCacheKey(principal));
+          if (cached) {
+            try {
+              const profile = JSON.parse(cached) as UserProfile;
+              try {
+                await actor.saveCallerUserProfile(profile);
+              } catch {
+                // Username may already exist or be invalid — still return cached for display
+              }
+              return profile;
+            } catch {
+              return null;
+            }
+          }
+        }
+        return null;
       } catch {
+        // On error, fall back to localStorage cache so username still shows
+        if (principal) {
+          const cached = localStorage.getItem(profileCacheKey(principal));
+          if (cached) {
+            try {
+              return JSON.parse(cached) as UserProfile;
+            } catch {
+              /* ignore */
+            }
+          }
+        }
         return null;
       }
     },
     enabled: isLoggedIn && !!actor && !actorFetching,
+    // Show cached username instantly from localStorage while backend loads
+    initialData: () => {
+      if (!principal) return undefined;
+      try {
+        const cached = localStorage.getItem(profileCacheKey(principal));
+        if (cached) {
+          const parsed = JSON.parse(cached) as UserProfile;
+          if (parsed?.name) return parsed;
+        }
+      } catch {
+        /* ignore */
+      }
+      return undefined;
+    },
+    // Mark as stale immediately so backend fetch still happens
+    initialDataUpdatedAt: 0,
     // Retry up to 3 times so transient backend errors don't leave username blank
     retry: 3,
     retryDelay: 1000,
     // Keep previous data visible while refetching
     placeholderData: (prev) => prev,
+    // Don't refetch more than once every 30 seconds to avoid flickering
+    staleTime: 30_000,
+    // Always refetch on mount to get fresh data from backend
+    refetchOnMount: "always",
   });
 }
 
@@ -299,6 +366,17 @@ export function useSaveUserProfile() {
       return actor.saveCallerUserProfile(profile);
     },
     onSuccess: (_data, variables) => {
+      // Persist to localStorage so it survives future fresh deploys
+      if (principal) {
+        try {
+          localStorage.setItem(
+            profileCacheKey(principal),
+            JSON.stringify(variables),
+          );
+        } catch {
+          /* storage quota */
+        }
+      }
       // Immediately update the cached callerProfile so navbar updates instantly
       queryClient.setQueryData(["callerProfile", principal], variables);
       // Invalidate all dependent queries to refetch with new username
