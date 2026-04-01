@@ -7,40 +7,35 @@ import type {
 } from "../data/dummyData";
 import { TIER_ORDER } from "../data/dummyData";
 
+// New 3-level tier system per category (no MT)
+// ht1 = HT Peak, ht2 = HT, ht3 = HT Low
+// lt1 = LT Peak, lt2 = LT, lt3 = LT Low
 const BACKEND_TO_LOCAL: Record<string, LocalTier> = {
-  ht1: "HT1",
-  ht2: "HT2",
-  ht3: "HT3",
-  ht4: "HT4",
-  ht5: "HT5",
-  mt1: "MT1",
-  mt2: "MT2",
-  mt3: "MT3",
-  mt4: "MT4",
-  mt5: "MT5",
-  lt1: "LT1",
-  lt2: "LT2",
-  lt3: "LT3",
-  lt4: "LT4",
-  lt5: "LT5",
+  ht1: "HT Peak",
+  ht2: "HT",
+  ht3: "HT Low",
+  ht4: "HT Low",
+  ht5: "HT Low",
+  lt1: "LT Peak",
+  lt2: "LT",
+  lt3: "LT Low",
+  lt4: "LT Low",
+  lt5: "LT Low",
+  // MT tiers are no longer used; treat as LT Peak
+  mt1: "LT Peak",
+  mt2: "LT Peak",
+  mt3: "LT",
+  mt4: "LT",
+  mt5: "LT Low",
 };
 
 const LOCAL_TO_BACKEND: Record<string, BackendTier> = {
-  HT1: "ht1" as BackendTier,
-  HT2: "ht2" as BackendTier,
-  HT3: "ht3" as BackendTier,
-  HT4: "ht4" as BackendTier,
-  HT5: "ht5" as BackendTier,
-  MT1: "mt1" as BackendTier,
-  MT2: "mt2" as BackendTier,
-  MT3: "mt3" as BackendTier,
-  MT4: "mt4" as BackendTier,
-  MT5: "mt5" as BackendTier,
-  LT1: "lt1" as BackendTier,
-  LT2: "lt2" as BackendTier,
-  LT3: "lt3" as BackendTier,
-  LT4: "lt4" as BackendTier,
-  LT5: "lt5" as BackendTier,
+  "HT Peak": "ht1" as BackendTier,
+  HT: "ht2" as BackendTier,
+  "HT Low": "ht3" as BackendTier,
+  "LT Peak": "lt1" as BackendTier,
+  LT: "lt2" as BackendTier,
+  "LT Low": "lt3" as BackendTier,
   none: "none" as BackendTier,
 };
 
@@ -67,7 +62,6 @@ export function backendPlayerToLocal(player: BackendPlayer): LocalPlayer {
   if (axe) ranks["axe-pvp"] = axe;
   if (sword) ranks["sword-pvp"] = sword;
   if (crystal) ranks["crystal-pvp"] = crystal;
-  // biome: use dot notation for simple keys
   if (uhc) ranks.uhc = uhc;
   if (nethpot) ranks.nethpot = nethpot;
   if (smp) ranks["smp-pvp"] = smp;
@@ -94,20 +88,26 @@ export function getBestTier(player: LocalPlayer): LocalTier | null {
 }
 
 export const ALL_TIER_OPTIONS: Array<LocalTier | "none"> = [
-  "HT1",
-  "HT2",
-  "HT3",
-  "HT4",
-  "HT5",
-  "MT1",
-  "MT2",
-  "MT3",
-  "MT4",
-  "MT5",
-  "LT1",
-  "LT2",
-  "LT3",
-  "LT4",
-  "LT5",
+  "HT Peak",
+  "HT",
+  "HT Low",
+  "LT Peak",
+  "LT",
+  "LT Low",
   "none",
 ];
+
+// Label mapping for backend tier enum values used in dropdowns
+export const BACKEND_TIER_LABELS: Record<string, string> = {
+  ht1: "HT Peak",
+  ht2: "HT",
+  ht3: "HT Low",
+  ht4: "HT Low",
+  ht5: "HT Low",
+  lt1: "LT Peak",
+  lt2: "LT",
+  lt3: "LT Low",
+  lt4: "LT Low",
+  lt5: "LT Low",
+  none: "None",
+};

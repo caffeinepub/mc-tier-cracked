@@ -2,6 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { FlaskConical, LogOut, Menu, UserCircle, X } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "../hooks/useAuth";
+import { useCallerProfile } from "../hooks/useQueries";
 
 const NAV_LINKS = [
   { label: "HOME", href: "/" as const },
@@ -32,10 +33,12 @@ export default function Navbar() {
   const routerState = useRouterState();
   const pathname = routerState.location.pathname;
   const { isLoggedIn, role, login, logout, principal, isLoading } = useAuth();
+  const { data: callerProfile } = useCallerProfile();
 
   const shortPrincipal = principal
     ? `${principal.slice(0, 5)}...${principal.slice(-3)}`
     : "";
+  const displayName = callerProfile?.name || shortPrincipal;
   const badge = role && role !== "admin" ? ROLE_BADGE[role] : null;
 
   const extraLinks = [
@@ -148,12 +151,29 @@ export default function Navbar() {
                       {badge.label}
                     </span>
                   )}
-                  <span
-                    className="text-xs"
-                    style={{ color: "#9AA3B2", fontFamily: "monospace" }}
-                  >
-                    {shortPrincipal}
-                  </span>
+                  <div className="flex flex-col items-end">
+                    <span
+                      className="text-xs font-semibold"
+                      style={{
+                        color: "#F2F5FF",
+                        fontFamily: "BricolageGrotesque",
+                      }}
+                    >
+                      {displayName}
+                    </span>
+                    {callerProfile?.name && (
+                      <span
+                        className="text-xs"
+                        style={{
+                          color: "#5A6478",
+                          fontFamily: "monospace",
+                          fontSize: "10px",
+                        }}
+                      >
+                        {shortPrincipal}
+                      </span>
+                    )}
+                  </div>
                 </Link>
                 <button
                   type="button"
@@ -260,11 +280,23 @@ export default function Navbar() {
               <Link
                 to="/profile"
                 data-ocid="nav.link"
-                className="text-xs"
-                style={{ color: "#9AA3B2", fontFamily: "monospace" }}
+                className="flex flex-col"
                 onClick={() => setMobileOpen(false)}
               >
-                {shortPrincipal}
+                <span
+                  className="text-sm font-semibold"
+                  style={{ color: "#F2F5FF", fontFamily: "BricolageGrotesque" }}
+                >
+                  {displayName}
+                </span>
+                {callerProfile?.name && (
+                  <span
+                    className="text-xs"
+                    style={{ color: "#5A6478", fontFamily: "monospace" }}
+                  >
+                    {shortPrincipal}
+                  </span>
+                )}
               </Link>
               <button
                 type="button"

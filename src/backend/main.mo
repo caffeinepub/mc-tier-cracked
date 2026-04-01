@@ -102,6 +102,7 @@ actor {
   let applications = Map.empty<Principal.Principal, Application>();
   let playerUsernames = Map.empty<Text, Principal.Principal>();
   let userProfiles = Map.empty<Principal.Principal, UserProfile>();
+  let profileUsernameIndex = Map.empty<Text, Principal.Principal>();
   let testerRoles = Map.empty<Principal.Principal, Bool>();
   let playerTags = Map.empty<Principal.Principal, [PlayerTag]>();
   let bannedUsers = Map.empty<Principal.Principal, Bool>();
@@ -258,11 +259,35 @@ actor {
     userProfiles.get(user);
   };
 
-  // Save profile without username uniqueness enforcement
+  // Save profile with username uniqueness enforcement
   public shared ({ caller }) func saveCallerUserProfile(profile : UserProfile) : async () {
     if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
       Runtime.trap("Unauthorized: Only users can save profiles");
     };
+    // Validate username format
+    let name = profile.name;
+    if (name.size() < 3 or name.size() > 20) {
+      Runtime.trap("Username must be 3-20 characters");
+    };
+    // Check uniqueness in profile username index
+    switch (profileUsernameIndex.get(name)) {
+      case (?existingPrincipal) {
+        if (not Principal.equal(existingPrincipal, caller)) {
+          Runtime.trap("Username already taken");
+        };
+      };
+      case (null) {};
+    };
+    // Remove old username index if user had a previous profile with different name
+    switch (userProfiles.get(caller)) {
+      case (?oldProfile) {
+        if (oldProfile.name != name) {
+          profileUsernameIndex.remove(oldProfile.name);
+        };
+      };
+      case (null) {};
+    };
+    profileUsernameIndex.add(name, caller);
     userProfiles.add(caller, profile);
   };
 

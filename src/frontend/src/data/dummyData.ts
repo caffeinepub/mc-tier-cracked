@@ -1,19 +1,4 @@
-export type Tier =
-  | "HT1"
-  | "HT2"
-  | "HT3"
-  | "HT4"
-  | "HT5"
-  | "MT1"
-  | "MT2"
-  | "MT3"
-  | "MT4"
-  | "MT5"
-  | "LT1"
-  | "LT2"
-  | "LT3"
-  | "LT4"
-  | "LT5";
+export type Tier = "HT Peak" | "HT" | "HT Low" | "LT Peak" | "LT" | "LT Low";
 
 export type GamemodeId =
   | "axe-pvp"
@@ -93,21 +78,12 @@ export const GAMEMODES: Gamemode[] = [
 ];
 
 export const TIER_ORDER: Tier[] = [
-  "HT1",
-  "HT2",
-  "HT3",
-  "HT4",
-  "HT5",
-  "MT1",
-  "MT2",
-  "MT3",
-  "MT4",
-  "MT5",
-  "LT1",
-  "LT2",
-  "LT3",
-  "LT4",
-  "LT5",
+  "HT Peak",
+  "HT",
+  "HT Low",
+  "LT Peak",
+  "LT",
+  "LT Low",
 ];
 
 export const PLAYERS: Player[] = [
@@ -116,11 +92,11 @@ export const PLAYERS: Player[] = [
     discord: "VoidSlayer#0001",
     avatar: "",
     ranks: {
-      "axe-pvp": "HT1",
-      "sword-pvp": "HT2",
-      "crystal-pvp": "HT1",
-      "mace-pvp": "HT2",
-      "cart-pvp": "MT1",
+      "axe-pvp": "HT Peak",
+      "sword-pvp": "HT",
+      "crystal-pvp": "HT Peak",
+      "mace-pvp": "HT",
+      "cart-pvp": "LT Peak",
     },
     proof: "https://youtube.com/watch?v=example1",
     testerVerified: true,
@@ -130,11 +106,11 @@ export const PLAYERS: Player[] = [
     discord: "NightBlade#4532",
     avatar: "",
     ranks: {
-      "sword-pvp": "HT1",
-      "axe-pvp": "HT3",
-      nethpot: "HT2",
-      uhc: "MT2",
-      "mace-pvp": "MT3",
+      "sword-pvp": "HT Peak",
+      "axe-pvp": "HT Low",
+      nethpot: "HT",
+      uhc: "LT Peak",
+      "mace-pvp": "LT Peak",
     },
     proof: "https://youtube.com/watch?v=example2",
   },
@@ -143,11 +119,11 @@ export const PLAYERS: Player[] = [
     discord: "CrystalKing#7777",
     avatar: "",
     ranks: {
-      "crystal-pvp": "HT2",
-      "axe-pvp": "MT1",
-      "sword-pvp": "MT3",
-      "smp-pvp": "HT1",
-      "cart-pvp": "HT3",
+      "crystal-pvp": "HT",
+      "axe-pvp": "LT Peak",
+      "sword-pvp": "LT Peak",
+      "smp-pvp": "HT Peak",
+      "cart-pvp": "HT Low",
     },
     proof: "https://youtube.com/watch?v=example3",
     testerVerified: true,
@@ -157,11 +133,11 @@ export const PLAYERS: Player[] = [
     discord: "UHCLegend#1234",
     avatar: "",
     ranks: {
-      uhc: "HT1",
-      "sword-pvp": "HT3",
-      "axe-pvp": "HT4",
-      "mace-pvp": "HT1",
-      "cart-pvp": "LT1",
+      uhc: "HT Peak",
+      "sword-pvp": "HT Low",
+      "axe-pvp": "HT Low",
+      "mace-pvp": "HT Peak",
+      "cart-pvp": "LT Low",
     },
     proof: "https://youtube.com/watch?v=example4",
   },
@@ -170,11 +146,11 @@ export const PLAYERS: Player[] = [
     discord: "PotionMaster#9900",
     avatar: "",
     ranks: {
-      nethpot: "HT1",
-      "crystal-pvp": "MT2",
-      "axe-pvp": "MT2",
-      "smp-pvp": "MT2",
-      "cart-pvp": "MT2",
+      nethpot: "HT Peak",
+      "crystal-pvp": "LT Peak",
+      "axe-pvp": "LT Peak",
+      "smp-pvp": "LT Peak",
+      "cart-pvp": "LT Peak",
     },
     proof: "https://youtube.com/watch?v=example6",
   },
@@ -183,11 +159,11 @@ export const PLAYERS: Player[] = [
     discord: "SMPWarrior#3321",
     avatar: "",
     ranks: {
-      "smp-pvp": "HT2",
-      "axe-pvp": "HT5",
-      "sword-pvp": "MT4",
-      "mace-pvp": "MT1",
-      "cart-pvp": "HT2",
+      "smp-pvp": "HT",
+      "axe-pvp": "HT Low",
+      "sword-pvp": "LT",
+      "mace-pvp": "LT Peak",
+      "cart-pvp": "HT",
     },
     proof: "https://youtube.com/watch?v=example7",
     testerVerified: true,
@@ -197,11 +173,11 @@ export const PLAYERS: Player[] = [
     discord: "ShadowAxe#1111",
     avatar: "",
     ranks: {
-      "axe-pvp": "HT2",
-      "crystal-pvp": "HT3",
-      nethpot: "MT1",
-      uhc: "LT1",
-      "mace-pvp": "LT2",
+      "axe-pvp": "HT",
+      "crystal-pvp": "HT Low",
+      nethpot: "LT Peak",
+      uhc: "LT Low",
+      "mace-pvp": "LT",
     },
     proof: "https://youtube.com/watch?v=example8",
   },
@@ -210,10 +186,10 @@ export const PLAYERS: Player[] = [
     discord: "QuantumBlade#4400",
     avatar: "",
     ranks: {
-      "sword-pvp": "HT4",
-      "axe-pvp": "MT3",
-      "smp-pvp": "MT3",
-      "cart-pvp": "MT3",
+      "sword-pvp": "HT Low",
+      "axe-pvp": "LT Peak",
+      "smp-pvp": "LT Peak",
+      "cart-pvp": "LT Peak",
     },
     proof: "https://youtube.com/watch?v=example9",
   },
@@ -222,11 +198,11 @@ export const PLAYERS: Player[] = [
     discord: "IcePhantom#6600",
     avatar: "",
     ranks: {
-      "crystal-pvp": "HT4",
-      nethpot: "MT2",
-      uhc: "HT2",
-      "axe-pvp": "MT4",
-      "mace-pvp": "HT3",
+      "crystal-pvp": "HT Low",
+      nethpot: "LT Peak",
+      uhc: "HT",
+      "axe-pvp": "LT",
+      "mace-pvp": "HT Low",
     },
     proof: "https://youtube.com/watch?v=example10",
   },
@@ -235,10 +211,10 @@ export const PLAYERS: Player[] = [
     discord: "FireStrike#7890",
     avatar: "",
     ranks: {
-      "axe-pvp": "MT5",
-      "sword-pvp": "MT5",
-      nethpot: "LT1",
-      "cart-pvp": "LT2",
+      "axe-pvp": "LT",
+      "sword-pvp": "LT",
+      nethpot: "LT Low",
+      "cart-pvp": "LT",
     },
     proof: "https://youtube.com/watch?v=example11",
   },
@@ -247,11 +223,11 @@ export const PLAYERS: Player[] = [
     discord: "NeonKnight#0099",
     avatar: "",
     ranks: {
-      "smp-pvp": "MT4",
-      uhc: "MT4",
-      "crystal-pvp": "MT5",
-      "axe-pvp": "LT1",
-      "mace-pvp": "MT4",
+      "smp-pvp": "LT",
+      uhc: "LT",
+      "crystal-pvp": "LT",
+      "axe-pvp": "LT Low",
+      "mace-pvp": "LT",
     },
     proof: "https://youtube.com/watch?v=example12",
   },
@@ -260,10 +236,10 @@ export const PLAYERS: Player[] = [
     discord: "GhostRaider#2233",
     avatar: "",
     ranks: {
-      "sword-pvp": "LT1",
-      nethpot: "LT2",
-      "smp-pvp": "LT1",
-      "cart-pvp": "HT4",
+      "sword-pvp": "LT Low",
+      nethpot: "LT",
+      "smp-pvp": "LT Low",
+      "cart-pvp": "HT Low",
     },
     proof: "https://youtube.com/watch?v=example13",
   },
@@ -272,12 +248,12 @@ export const PLAYERS: Player[] = [
     discord: "StarCrusher#5544",
     avatar: "",
     ranks: {
-      uhc: "HT3",
-      "crystal-pvp": "MT3",
-      "axe-pvp": "HT3",
-      "sword-pvp": "HT5",
-      "mace-pvp": "HT4",
-      "cart-pvp": "MT4",
+      uhc: "HT Low",
+      "crystal-pvp": "LT Peak",
+      "axe-pvp": "HT Low",
+      "sword-pvp": "HT Low",
+      "mace-pvp": "HT Low",
+      "cart-pvp": "LT",
     },
     proof: "https://youtube.com/watch?v=example14",
   },
@@ -286,11 +262,11 @@ export const PLAYERS: Player[] = [
     discord: "DarkNova#8833",
     avatar: "",
     ranks: {
-      nethpot: "HT3",
-      "smp-pvp": "HT3",
-      "crystal-pvp": "LT2",
-      "mace-pvp": "MT2",
-      "cart-pvp": "HT1",
+      nethpot: "HT Low",
+      "smp-pvp": "HT Low",
+      "crystal-pvp": "LT",
+      "mace-pvp": "LT Peak",
+      "cart-pvp": "HT Peak",
     },
     proof: "https://youtube.com/watch?v=example15",
   },
@@ -303,12 +279,9 @@ export function getTopRankForMode(
   return player.ranks[modeId] ?? null;
 }
 
-export function getTierCategory(
-  tier: Tier | undefined | null,
-): "HT" | "MT" | "LT" {
+export function getTierCategory(tier: Tier | undefined | null): "HT" | "LT" {
   if (!tier) return "LT";
   if (tier.startsWith("HT")) return "HT";
-  if (tier.startsWith("MT")) return "MT";
   return "LT";
 }
 
@@ -331,12 +304,6 @@ export function getTierColor(tier: Tier): {
       bg: "rgba(35,215,255,0.15)",
       text: "#23D7FF",
       glow: "rgba(35,215,255,0.5)",
-    };
-  if (cat === "MT")
-    return {
-      bg: "rgba(168,85,247,0.15)",
-      text: "#A855F7",
-      glow: "rgba(168,85,247,0.5)",
     };
   return {
     bg: "rgba(100,120,160,0.15)",

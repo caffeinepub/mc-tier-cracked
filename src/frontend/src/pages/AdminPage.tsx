@@ -87,23 +87,14 @@ const GAMEMODE_FIELDS: Array<{
   },
 ];
 
-const TIER_OPTIONS: Tier[] = [
-  Tier.ht1,
-  Tier.ht2,
-  Tier.ht3,
-  Tier.ht4,
-  Tier.ht5,
-  Tier.mt1,
-  Tier.mt2,
-  Tier.mt3,
-  Tier.mt4,
-  Tier.mt5,
-  Tier.lt1,
-  Tier.lt2,
-  Tier.lt3,
-  Tier.lt4,
-  Tier.lt5,
-  Tier.none,
+const TIER_OPTIONS: Array<{ value: Tier; label: string }> = [
+  { value: Tier.ht1, label: "HT Peak" },
+  { value: Tier.ht2, label: "HT" },
+  { value: Tier.ht3, label: "HT Low" },
+  { value: Tier.lt1, label: "LT Peak" },
+  { value: Tier.lt2, label: "LT" },
+  { value: Tier.lt3, label: "LT Low" },
+  { value: Tier.none, label: "None" },
 ];
 
 const TAG_OPTIONS: Array<{
@@ -396,8 +387,8 @@ function RankSelects({
             }}
           >
             {TIER_OPTIONS.map((t) => (
-              <option key={t} value={t}>
-                {t.toUpperCase()}
+              <option key={t.value} value={t.value}>
+                {t.label}
               </option>
             ))}
           </select>
@@ -420,8 +411,8 @@ function RankSelects({
           }}
         >
           {TIER_OPTIONS.map((t) => (
-            <option key={t} value={t}>
-              {t.toUpperCase()}
+            <option key={t.value} value={t.value}>
+              {t.label}
             </option>
           ))}
         </select>
