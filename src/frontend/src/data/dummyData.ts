@@ -1,19 +1,24 @@
 export type Tier =
   | "HT1 Peak"
   | "HT1 Low"
+  | "LT1 Peak"
+  | "LT1 Low"
   | "HT2 Peak"
   | "HT2 Low"
+  | "LT2 Peak"
+  | "LT2 Low"
   | "HT3 Peak"
   | "HT3 Low"
+  | "LT3 Peak"
+  | "LT3 Low"
   | "HT4 Peak"
   | "HT4 Low"
+  | "LT4 Peak"
+  | "LT4 Low"
   | "HT5 Peak"
   | "HT5 Low"
-  | "LT1 Peak"
-  | "LT2 Peak"
-  | "LT3 Peak"
-  | "LT4 Peak"
-  | "LT5 Peak";
+  | "LT5 Peak"
+  | "LT5 Low";
 export type GamemodeId =
   | "axe-pvp"
   | "sword-pvp"
@@ -94,19 +99,24 @@ export const GAMEMODES: Gamemode[] = [
 export const TIER_ORDER: Tier[] = [
   "HT1 Peak",
   "HT1 Low",
+  "LT1 Peak",
+  "LT1 Low",
   "HT2 Peak",
   "HT2 Low",
+  "LT2 Peak",
+  "LT2 Low",
   "HT3 Peak",
   "HT3 Low",
+  "LT3 Peak",
+  "LT3 Low",
   "HT4 Peak",
   "HT4 Low",
+  "LT4 Peak",
+  "LT4 Low",
   "HT5 Peak",
   "HT5 Low",
-  "LT1 Peak",
-  "LT2 Peak",
-  "LT3 Peak",
-  "LT4 Peak",
   "LT5 Peak",
+  "LT5 Low",
 ];
 
 export const PLAYERS: Player[] = [
@@ -130,7 +140,7 @@ export const PLAYERS: Player[] = [
     avatar: "",
     ranks: {
       "sword-pvp": "HT1 Peak",
-      "axe-pvp": "HT1 Low",
+      "axe-pvp": "LT1 Low",
       nethpot: "HT1 Peak",
       uhc: "LT1 Peak",
       "mace-pvp": "LT1 Peak",
@@ -146,7 +156,7 @@ export const PLAYERS: Player[] = [
       "axe-pvp": "LT1 Peak",
       "sword-pvp": "LT1 Peak",
       "smp-pvp": "HT1 Peak",
-      "cart-pvp": "HT1 Low",
+      "cart-pvp": "LT1 Low",
     },
     proof: "https://youtube.com/watch?v=example3",
     testerVerified: true,
@@ -157,8 +167,8 @@ export const PLAYERS: Player[] = [
     avatar: "",
     ranks: {
       uhc: "HT1 Peak",
-      "sword-pvp": "HT1 Low",
-      "axe-pvp": "HT1 Low",
+      "sword-pvp": "LT1 Low",
+      "axe-pvp": "LT1 Low",
       "mace-pvp": "HT1 Peak",
       "cart-pvp": "LT1 Peak",
     },
@@ -183,7 +193,7 @@ export const PLAYERS: Player[] = [
     avatar: "",
     ranks: {
       "smp-pvp": "HT1 Peak",
-      "axe-pvp": "HT1 Low",
+      "axe-pvp": "LT1 Low",
       "sword-pvp": "LT1 Peak",
       "mace-pvp": "LT1 Peak",
       "cart-pvp": "HT1 Peak",
@@ -197,7 +207,7 @@ export const PLAYERS: Player[] = [
     avatar: "",
     ranks: {
       "axe-pvp": "HT1 Peak",
-      "crystal-pvp": "HT1 Low",
+      "crystal-pvp": "LT1 Low",
       nethpot: "LT1 Peak",
       uhc: "LT1 Peak",
       "mace-pvp": "LT1 Peak",
@@ -209,7 +219,7 @@ export const PLAYERS: Player[] = [
     discord: "QuantumBlade#4400",
     avatar: "",
     ranks: {
-      "sword-pvp": "HT1 Low",
+      "sword-pvp": "LT1 Low",
       "axe-pvp": "LT1 Peak",
       "smp-pvp": "LT1 Peak",
       "cart-pvp": "LT1 Peak",
@@ -221,11 +231,11 @@ export const PLAYERS: Player[] = [
     discord: "IcePhantom#6600",
     avatar: "",
     ranks: {
-      "crystal-pvp": "HT1 Low",
+      "crystal-pvp": "LT1 Low",
       nethpot: "LT1 Peak",
       uhc: "HT1 Peak",
       "axe-pvp": "LT1 Peak",
-      "mace-pvp": "HT1 Low",
+      "mace-pvp": "LT1 Low",
     },
     proof: "https://youtube.com/watch?v=example10",
   },
@@ -262,7 +272,7 @@ export const PLAYERS: Player[] = [
       "sword-pvp": "LT1 Peak",
       nethpot: "LT1 Peak",
       "smp-pvp": "LT1 Peak",
-      "cart-pvp": "HT1 Low",
+      "cart-pvp": "LT1 Low",
     },
     proof: "https://youtube.com/watch?v=example13",
   },
@@ -271,11 +281,11 @@ export const PLAYERS: Player[] = [
     discord: "StarCrusher#5544",
     avatar: "",
     ranks: {
-      uhc: "HT1 Low",
+      uhc: "LT1 Low",
       "crystal-pvp": "LT1 Peak",
-      "axe-pvp": "HT1 Low",
-      "sword-pvp": "HT1 Low",
-      "mace-pvp": "HT1 Low",
+      "axe-pvp": "LT1 Low",
+      "sword-pvp": "LT1 Low",
+      "mace-pvp": "LT1 Low",
       "cart-pvp": "LT1 Peak",
     },
     proof: "https://youtube.com/watch?v=example14",
@@ -285,8 +295,8 @@ export const PLAYERS: Player[] = [
     discord: "DarkNova#8833",
     avatar: "",
     ranks: {
-      nethpot: "HT1 Low",
-      "smp-pvp": "HT1 Low",
+      nethpot: "LT1 Low",
+      "smp-pvp": "LT1 Low",
       "crystal-pvp": "LT1 Peak",
       "mace-pvp": "LT1 Peak",
       "cart-pvp": "HT1 Peak",

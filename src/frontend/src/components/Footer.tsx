@@ -18,12 +18,12 @@ export default function Footer() {
         >
           <p style={{ marginBottom: 4 }}>
             <span style={{ color: "#c0c8d4" }}>
-              © 2026 MineLister. All rights reserved.
+              © 2026 MC TIER (CRACKED). All rights reserved.
             </span>
           </p>
           <p style={{ marginBottom: 4 }}>
-            MineLister is not affiliated with, endorsed by, or sponsored by
-            Mojang Studios or Microsoft.
+            MC TIER (CRACKED) is not affiliated with, endorsed by, or sponsored
+            by Mojang Studios or Microsoft.
           </p>
           <p style={{ marginBottom: 4 }}>
             Minecraft is a trademark of Mojang Studios. All related assets,

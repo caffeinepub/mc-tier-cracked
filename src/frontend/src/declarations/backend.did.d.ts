@@ -56,19 +56,24 @@ export interface ProfileEntry {
   'tags' : Array<PlayerTag>,
 }
 export type Tier = { 'ht1' : null } |
-  { 'ht2' : null } |
-  { 'ht3' : null } |
-  { 'ht4' : null } |
-  { 'ht5' : null } |
+  { 'ht1low' : null } |
   { 'lt1' : null } |
-  { 'lt2' : null } |
-  { 'lt3' : null } |
-  { 'lt4' : null } |
-  { 'lt5' : null } |
   { 'mt1' : null } |
+  { 'ht2' : null } |
+  { 'ht2low' : null } |
+  { 'lt2' : null } |
   { 'mt2' : null } |
+  { 'ht3' : null } |
+  { 'ht3low' : null } |
+  { 'lt3' : null } |
   { 'mt3' : null } |
+  { 'ht4' : null } |
+  { 'ht4low' : null } |
+  { 'lt4' : null } |
   { 'mt4' : null } |
+  { 'ht5' : null } |
+  { 'ht5low' : null } |
+  { 'lt5' : null } |
   { 'mt5' : null } |
   { 'none' : null };
 export interface UserProfile { 'name' : string, 'role' : string }

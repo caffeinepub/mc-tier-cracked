@@ -1,12 +1,10 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import type { PlayerTag } from "../backend.d";
-import GamemodeCard from "../components/GamemodeCard";
-import GamemodeIcon from "../components/GamemodeIcon";
 import HeroSection from "../components/HeroSection";
 import LeaderboardRow from "../components/LeaderboardRow";
 import SectionHeader from "../components/SectionHeader";
-import { GAMEMODES, TIER_ORDER } from "../data/dummyData";
-import type { GamemodeId, Tier } from "../data/dummyData";
+import { TIER_ORDER } from "../data/dummyData";
+import type { Tier } from "../data/dummyData";
 import { useAllProfiles, useApprovedPlayers } from "../hooks/useQueries";
 
 const SKELETON_KEYS = ["sk-1", "sk-2", "sk-3", "sk-4", "sk-5", "sk-6"];
@@ -14,7 +12,6 @@ const SKELETON_KEYS = ["sk-1", "sk-2", "sk-3", "sk-4", "sk-5", "sk-6"];
 export default function HomePage() {
   const { data: players = [], isLoading } = useApprovedPlayers();
   const { data: profiles = [] } = useAllProfiles();
-  const [selectedMode, setSelectedMode] = useState<GamemodeId>(GAMEMODES[0].id);
 
   const tagsByUsername = useMemo(() => {
     const map: Record<string, PlayerTag[]> = {};
@@ -24,38 +21,27 @@ export default function HomePage() {
     return map;
   }, [profiles]);
 
-  const gamemodePlayerCounts = GAMEMODES.map((gm) => ({
-    gm,
-    count: players.filter((p) => p.ranks[gm.id]).length,
-  }));
-
-  const rankedPlayers = players
-    .filter((p) => p.ranks[selectedMode])
-    .map((p) => ({ player: p, tier: p.ranks[selectedMode]! as Tier }))
-    .sort((a, b) => TIER_ORDER.indexOf(a.tier) - TIER_ORDER.indexOf(b.tier));
-
-  const selectedGamemode = GAMEMODES.find((g) => g.id === selectedMode);
+  // Each player ranked by their best tier across all gamemodes
+  const rankedPlayers = useMemo(() => {
+    return players
+      .map((p) => {
+        const tiers = Object.values(p.ranks).filter(Boolean) as Tier[];
+        const bestTier = tiers.sort(
+          (a, b) => TIER_ORDER.indexOf(a) - TIER_ORDER.indexOf(b),
+        )[0];
+        return bestTier ? { player: p, tier: bestTier } : null;
+      })
+      .filter(
+        (x): x is { player: (typeof players)[0]; tier: Tier } => x !== null,
+      )
+      .sort((a, b) => TIER_ORDER.indexOf(a.tier) - TIER_ORDER.indexOf(b.tier));
+  }, [players]);
 
   return (
     <div>
       <HeroSection />
 
-      {/* Featured Game Modes */}
-      <section className="py-20 px-4" style={{ backgroundColor: "#0B0D10" }}>
-        <div className="max-w-7xl mx-auto">
-          <SectionHeader
-            title="Featured Game Modes"
-            subtitle="Choose a gamemode to explore rankings and tier lists"
-          />
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {gamemodePlayerCounts.map(({ gm, count }) => (
-              <GamemodeCard key={gm.id} gamemode={gm} playerCount={count} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Full Leaderboard inline */}
+      {/* Player Rankings */}
       <section
         className="py-20 px-4"
         style={{
@@ -66,72 +52,8 @@ export default function HomePage() {
         <div className="max-w-4xl mx-auto">
           <SectionHeader
             title="Player Rankings"
-            subtitle="Top ranked players — sorted by tier per gamemode"
+            subtitle="Top ranked players — sorted by tier"
           />
-
-          {/* Gamemode filter tabs */}
-          <div
-            className="flex flex-wrap gap-2 justify-center mb-10"
-            data-ocid="leaderboard.tab"
-          >
-            {GAMEMODES.map((gm) => (
-              <button
-                type="button"
-                key={gm.id}
-                onClick={() => setSelectedMode(gm.id)}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold tracking-widest transition-all duration-200"
-                style={{
-                  backgroundColor:
-                    selectedMode === gm.id
-                      ? "rgba(35,215,255,0.15)"
-                      : "rgba(255,255,255,0.04)",
-                  color: selectedMode === gm.id ? "#23D7FF" : "#9AA3B2",
-                  border:
-                    selectedMode === gm.id
-                      ? "1px solid rgba(35,215,255,0.5)"
-                      : "1px solid rgba(255,255,255,0.08)",
-                  boxShadow:
-                    selectedMode === gm.id
-                      ? "0 0 14px rgba(35,215,255,0.25)"
-                      : "none",
-                  letterSpacing: "0.1em",
-                }}
-              >
-                <GamemodeIcon id={gm.id} size={14} />
-                <span>{gm.name.toUpperCase()}</span>
-              </button>
-            ))}
-          </div>
-
-          {/* Selected gamemode info bar */}
-          {selectedGamemode && (
-            <div
-              className="flex items-center gap-3 mb-6 px-5 py-3.5 rounded-xl"
-              style={{
-                backgroundColor: "#141821",
-                border: "1px solid rgba(35,215,255,0.15)",
-              }}
-            >
-              <GamemodeIcon id={selectedGamemode.id} size={24} />
-              <div>
-                <h3
-                  className="font-bold"
-                  style={{ color: "#F2F5FF", fontFamily: "BricolageGrotesque" }}
-                >
-                  {selectedGamemode.name}
-                </h3>
-                <p className="text-xs" style={{ color: "#9AA3B2" }}>
-                  {selectedGamemode.description}
-                </p>
-              </div>
-              <span
-                className="ml-auto text-sm font-bold"
-                style={{ color: "#23D7FF" }}
-              >
-                {rankedPlayers.length} players
-              </span>
-            </div>
-          )}
 
           {isLoading ? (
             <div
@@ -154,8 +76,6 @@ export default function HomePage() {
                   rank={i + 1}
                   player={player}
                   tier={tier}
-                  modeId={selectedMode}
-                  modeName={selectedGamemode?.name}
                   index={i + 1}
                   tags={tagsByUsername[player.username] ?? []}
                 />
@@ -167,9 +87,7 @@ export default function HomePage() {
               data-ocid="leaderboard.empty_state"
             >
               <div className="text-5xl mb-4">📋</div>
-              <p style={{ color: "#9AA3B2" }}>
-                No players ranked in this gamemode yet.
-              </p>
+              <p style={{ color: "#9AA3B2" }}>No players ranked yet.</p>
             </div>
           )}
         </div>
