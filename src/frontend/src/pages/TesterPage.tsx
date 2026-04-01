@@ -78,12 +78,21 @@ const GAMEMODE_FIELDS: Array<{
 ];
 
 const TIER_OPTIONS: Array<{ value: Tier; label: string }> = [
-  { value: Tier.ht1, label: "HT Peak" },
-  { value: Tier.ht2, label: "HT" },
-  { value: Tier.ht3, label: "HT Low" },
-  { value: Tier.lt1, label: "LT Peak" },
-  { value: Tier.lt2, label: "LT" },
-  { value: Tier.lt3, label: "LT Low" },
+  { value: Tier.ht1, label: "HT1 Peak" },
+  { value: Tier.mt1, label: "HT1 Low" },
+  { value: Tier.ht2, label: "HT2 Peak" },
+  { value: Tier.mt2, label: "HT2 Low" },
+  { value: Tier.ht3, label: "HT3 Peak" },
+  { value: Tier.mt3, label: "HT3 Low" },
+  { value: Tier.ht4, label: "HT4 Peak" },
+  { value: Tier.mt4, label: "HT4 Low" },
+  { value: Tier.ht5, label: "HT5 Peak" },
+  { value: Tier.mt5, label: "HT5 Low" },
+  { value: Tier.lt1, label: "LT1 Peak" },
+  { value: Tier.lt2, label: "LT2 Peak" },
+  { value: Tier.lt3, label: "LT3 Peak" },
+  { value: Tier.lt4, label: "LT4 Peak" },
+  { value: Tier.lt5, label: "LT5 Peak" },
   { value: Tier.none, label: "None" },
 ];
 

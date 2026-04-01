@@ -824,41 +824,25 @@ function from_candid_variant_n19(_uploadFile: (file: ExternalBlob) => Promise<Ui
 }): ApplicationStatus {
     return "pending" in value ? ApplicationStatus.pending : "approved" in value ? ApplicationStatus.approved : "rejected" in value ? ApplicationStatus.rejected : value;
 }
-function from_candid_variant_n23(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
-    ht1: null;
-} | {
-    ht2: null;
-} | {
-    ht3: null;
-} | {
-    ht4: null;
-} | {
-    ht5: null;
-} | {
-    lt1: null;
-} | {
-    lt2: null;
-} | {
-    lt3: null;
-} | {
-    lt4: null;
-} | {
-    lt5: null;
-} | {
-    mt1: null;
-} | {
-    mt2: null;
-} | {
-    mt3: null;
-} | {
-    mt4: null;
-} | {
-    mt5: null;
-} | {
-    none: null;
-}): Tier {
+function from_candid_variant_n23(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {'ht1': null;} | 
+{'ht2': null;} | 
+{'ht3': null;} | 
+{'ht4': null;} | 
+{'ht5': null;} | 
+{'lt1': null;} | 
+{'lt2': null;} | 
+{'lt3': null;} | 
+{'lt4': null;} | 
+{'lt5': null;} | 
+{'mt1': null;} | 
+{'mt2': null;} | 
+{'mt3': null;} | 
+{'mt4': null;} | 
+{'mt5': null;} | 
+{'none': null;}): Tier {
     return "ht1" in value ? Tier.ht1 : "ht2" in value ? Tier.ht2 : "ht3" in value ? Tier.ht3 : "ht4" in value ? Tier.ht4 : "ht5" in value ? Tier.ht5 : "lt1" in value ? Tier.lt1 : "lt2" in value ? Tier.lt2 : "lt3" in value ? Tier.lt3 : "lt4" in value ? Tier.lt4 : "lt5" in value ? Tier.lt5 : "mt1" in value ? Tier.mt1 : "mt2" in value ? Tier.mt2 : "mt3" in value ? Tier.mt3 : "mt4" in value ? Tier.mt4 : "mt5" in value ? Tier.mt5 : "none" in value ? Tier.none : value;
 }
+
 function from_candid_variant_n31(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     admin: null;
 } | {
@@ -1013,73 +997,25 @@ function to_candid_variant_n5(_uploadFile: (file: ExternalBlob) => Promise<Uint8
         tierTester: null
     } : value;
 }
-function to_candid_variant_n9(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Tier): {
-    ht1: null;
-} | {
-    ht2: null;
-} | {
-    ht3: null;
-} | {
-    ht4: null;
-} | {
-    ht5: null;
-} | {
-    lt1: null;
-} | {
-    lt2: null;
-} | {
-    lt3: null;
-} | {
-    lt4: null;
-} | {
-    lt5: null;
-} | {
-    mt1: null;
-} | {
-    mt2: null;
-} | {
-    mt3: null;
-} | {
-    mt4: null;
-} | {
-    mt5: null;
-} | {
-    none: null;
-} {
-    return value == Tier.ht1 ? {
-        ht1: null
-    } : value == Tier.ht2 ? {
-        ht2: null
-    } : value == Tier.ht3 ? {
-        ht3: null
-    } : value == Tier.ht4 ? {
-        ht4: null
-    } : value == Tier.ht5 ? {
-        ht5: null
-    } : value == Tier.lt1 ? {
-        lt1: null
-    } : value == Tier.lt2 ? {
-        lt2: null
-    } : value == Tier.lt3 ? {
-        lt3: null
-    } : value == Tier.lt4 ? {
-        lt4: null
-    } : value == Tier.lt5 ? {
-        lt5: null
-    } : value == Tier.mt1 ? {
-        mt1: null
-    } : value == Tier.mt2 ? {
-        mt2: null
-    } : value == Tier.mt3 ? {
-        mt3: null
-    } : value == Tier.mt4 ? {
-        mt4: null
-    } : value == Tier.mt5 ? {
-        mt5: null
-    } : value == Tier.none ? {
-        none: null
-    } : value;
+function to_candid_variant_n9(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Tier): {'ht1': null;} | 
+{'ht2': null;} | 
+{'ht3': null;} | 
+{'ht4': null;} | 
+{'ht5': null;} | 
+{'lt1': null;} | 
+{'lt2': null;} | 
+{'lt3': null;} | 
+{'lt4': null;} | 
+{'lt5': null;} | 
+{'mt1': null;} | 
+{'mt2': null;} | 
+{'mt3': null;} | 
+{'mt4': null;} | 
+{'mt5': null;} | 
+{'none': null;} {
+    return value == Tier.ht1 ? {'ht1': null} : value == Tier.ht2 ? {'ht2': null} : value == Tier.ht3 ? {'ht3': null} : value == Tier.ht4 ? {'ht4': null} : value == Tier.ht5 ? {'ht5': null} : value == Tier.lt1 ? {'lt1': null} : value == Tier.lt2 ? {'lt2': null} : value == Tier.lt3 ? {'lt3': null} : value == Tier.lt4 ? {'lt4': null} : value == Tier.lt5 ? {'lt5': null} : value == Tier.mt1 ? {'mt1': null} : value == Tier.mt2 ? {'mt2': null} : value == Tier.mt3 ? {'mt3': null} : value == Tier.mt4 ? {'mt4': null} : value == Tier.mt5 ? {'mt5': null} : value == Tier.none ? {'none': null} : value;
 }
+
 function to_candid_vec_n3(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<PlayerTag>): Array<_PlayerTag> {
     return value.map((x)=>to_candid_PlayerTag_n4(_uploadFile, _downloadFile, x));
 }

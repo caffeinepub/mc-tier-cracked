@@ -7,36 +7,44 @@ import type {
 } from "../data/dummyData";
 import { TIER_ORDER } from "../data/dummyData";
 
-// New 3-level tier system per category (no MT)
-// ht1 = HT Peak, ht2 = HT, ht3 = HT Low
-// lt1 = LT Peak, lt2 = LT, lt3 = LT Low
+// ht1-ht5 = HT1 Peak through HT5 Peak (best of each HT tier)
+// mt1-mt5 = HT1 Low through HT5 Low (lowest of each HT tier)
+// lt1-lt5 = LT1 Peak through LT5 Peak
 const BACKEND_TO_LOCAL: Record<string, LocalTier> = {
-  ht1: "HT Peak",
-  ht2: "HT",
-  ht3: "HT Low",
-  ht4: "HT Low",
-  ht5: "HT Low",
-  lt1: "LT Peak",
-  lt2: "LT",
-  lt3: "LT Low",
-  lt4: "LT Low",
-  lt5: "LT Low",
-  // MT tiers are no longer used; treat as LT Peak
-  mt1: "LT Peak",
-  mt2: "LT Peak",
-  mt3: "LT",
-  mt4: "LT",
-  mt5: "LT Low",
+  ht1: "HT1 Peak",
+  ht2: "HT2 Peak",
+  ht3: "HT3 Peak",
+  ht4: "HT4 Peak",
+  ht5: "HT5 Peak",
+  mt1: "HT1 Low",
+  mt2: "HT2 Low",
+  mt3: "HT3 Low",
+  mt4: "HT4 Low",
+  mt5: "HT5 Low",
+  lt1: "LT1 Peak",
+  lt2: "LT2 Peak",
+  lt3: "LT3 Peak",
+  lt4: "LT4 Peak",
+  lt5: "LT5 Peak",
 };
 
-const LOCAL_TO_BACKEND: Record<string, BackendTier> = {
-  "HT Peak": "ht1" as BackendTier,
-  HT: "ht2" as BackendTier,
-  "HT Low": "ht3" as BackendTier,
-  "LT Peak": "lt1" as BackendTier,
-  LT: "lt2" as BackendTier,
-  "LT Low": "lt3" as BackendTier,
-  none: "none" as BackendTier,
+const LOCAL_TO_BACKEND: Record<string, string> = {
+  "HT1 Peak": "ht1",
+  "HT2 Peak": "ht2",
+  "HT3 Peak": "ht3",
+  "HT4 Peak": "ht4",
+  "HT5 Peak": "ht5",
+  "HT1 Low": "mt1",
+  "HT2 Low": "mt2",
+  "HT3 Low": "mt3",
+  "HT4 Low": "mt4",
+  "HT5 Low": "mt5",
+  "LT1 Peak": "lt1",
+  "LT2 Peak": "lt2",
+  "LT3 Peak": "lt3",
+  "LT4 Peak": "lt4",
+  "LT5 Peak": "lt5",
+  none: "none",
 };
 
 export function backendTierToLocal(tier: BackendTier): LocalTier | null {
@@ -44,7 +52,7 @@ export function backendTierToLocal(tier: BackendTier): LocalTier | null {
 }
 
 export function localTierToBackend(tier: string): BackendTier {
-  return LOCAL_TO_BACKEND[tier] ?? ("none" as BackendTier);
+  return (LOCAL_TO_BACKEND[tier] ?? "none") as BackendTier;
 }
 
 export function backendPlayerToLocal(player: BackendPlayer): LocalPlayer {
@@ -88,26 +96,39 @@ export function getBestTier(player: LocalPlayer): LocalTier | null {
 }
 
 export const ALL_TIER_OPTIONS: Array<LocalTier | "none"> = [
-  "HT Peak",
-  "HT",
-  "HT Low",
-  "LT Peak",
-  "LT",
-  "LT Low",
+  "HT1 Peak",
+  "HT1 Low",
+  "HT2 Peak",
+  "HT2 Low",
+  "HT3 Peak",
+  "HT3 Low",
+  "HT4 Peak",
+  "HT4 Low",
+  "HT5 Peak",
+  "HT5 Low",
+  "LT1 Peak",
+  "LT2 Peak",
+  "LT3 Peak",
+  "LT4 Peak",
+  "LT5 Peak",
   "none",
 ];
 
-// Label mapping for backend tier enum values used in dropdowns
 export const BACKEND_TIER_LABELS: Record<string, string> = {
-  ht1: "HT Peak",
-  ht2: "HT",
-  ht3: "HT Low",
-  ht4: "HT Low",
-  ht5: "HT Low",
-  lt1: "LT Peak",
-  lt2: "LT",
-  lt3: "LT Low",
-  lt4: "LT Low",
-  lt5: "LT Low",
+  ht1: "HT1 Peak",
+  ht2: "HT2 Peak",
+  ht3: "HT3 Peak",
+  ht4: "HT4 Peak",
+  ht5: "HT5 Peak",
+  mt1: "HT1 Low",
+  mt2: "HT2 Low",
+  mt3: "HT3 Low",
+  mt4: "HT4 Low",
+  mt5: "HT5 Low",
+  lt1: "LT1 Peak",
+  lt2: "LT2 Peak",
+  lt3: "LT3 Peak",
+  lt4: "LT4 Peak",
+  lt5: "LT5 Peak",
   none: "None",
 };
