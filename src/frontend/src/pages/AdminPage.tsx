@@ -9,7 +9,7 @@ import {
   Trash2,
   Users,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { Player as BackendPlayer } from "../backend.d";
 import { PlayerTag, Tier } from "../backend.d";
@@ -357,6 +357,11 @@ function defaultRanks(player?: Partial<BackendPlayer>): RanksState {
   return init;
 }
 
+function sanitizeTier(v: unknown): Tier {
+  const valid = Object.values(Tier) as string[];
+  return valid.includes(v as string) ? (v as Tier) : Tier.none;
+}
+
 function buildPlayerData(
   name: string,
   discord: string | undefined | null,
@@ -365,15 +370,15 @@ function buildPlayerData(
   return {
     username: name,
     discord: discord ?? undefined,
-    axePvpTier: (ranks.axePvpTier as Tier) ?? Tier.none,
-    swordPvpTier: (ranks.swordPvpTier as Tier) ?? Tier.none,
-    crystalPvpTier: (ranks.crystalPvpTier as Tier) ?? Tier.none,
-    uhcTier: (ranks.uhcTier as Tier) ?? Tier.none,
-    nethpotTier: (ranks.nethpotTier as Tier) ?? Tier.none,
-    smpPvpTier: (ranks.smpPvpTier as Tier) ?? Tier.none,
-    macePvpTier: (ranks.macePvpTier as Tier) ?? Tier.none,
-    cartPvpTier: (ranks.cartPvpTier as Tier) ?? Tier.none,
-    overallTier: (ranks.overallTier as Tier) ?? Tier.none,
+    axePvpTier: sanitizeTier(ranks.axePvpTier),
+    swordPvpTier: sanitizeTier(ranks.swordPvpTier),
+    crystalPvpTier: sanitizeTier(ranks.crystalPvpTier),
+    uhcTier: sanitizeTier(ranks.uhcTier),
+    nethpotTier: sanitizeTier(ranks.nethpotTier),
+    smpPvpTier: sanitizeTier(ranks.smpPvpTier),
+    macePvpTier: sanitizeTier(ranks.macePvpTier),
+    cartPvpTier: sanitizeTier(ranks.cartPvpTier),
+    overallTier: sanitizeTier(ranks.overallTier),
   };
 }
 function RankSelects({
@@ -444,6 +449,15 @@ function PlayerCard({ profile, appEntry }: { profile: any; appEntry: any }) {
     () => profile.tags ?? [],
   );
   const [isTester, setIsTester] = useState(false);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally only sync on expand toggle
+  useEffect(() => {
+    if (expanded) {
+      setRanks(defaultRanks(appEntry?.application?.player));
+      setSelectedTags(profile.tags ?? []);
+    }
+  }, [expanded]);
+
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmBan, setConfirmBan] = useState(false);
   const [loading, setLoading] = useState<string | null>(null);

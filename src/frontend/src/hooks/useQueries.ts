@@ -324,6 +324,7 @@ export function useAssignPlayerTags() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["allProfiles"] });
+      queryClient.invalidateQueries({ queryKey: ["approvedPlayers"] });
     },
   });
 }
@@ -359,6 +360,8 @@ export function useAdminUpdatePendingRanks() {
       queryClient.invalidateQueries({
         queryKey: ["allApplicationsWithPrincipals"],
       });
+      queryClient.invalidateQueries({ queryKey: ["approvedPlayers"] });
+      queryClient.invalidateQueries({ queryKey: ["allProfiles"] });
     },
   });
 }
