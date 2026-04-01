@@ -3,12 +3,12 @@ import GamemodeIcon from "../components/GamemodeIcon";
 import TierBadge from "../components/TierBadge";
 import {
   GAMEMODES,
-  PLAYERS,
   TIER_ORDER,
   getTierCategory,
   getTierColor,
 } from "../data/dummyData";
 import type { GamemodeId, Tier } from "../data/dummyData";
+import { useApprovedPlayers } from "../hooks/useQueries";
 
 const TIER_GROUPS: Array<{
   label: string;
@@ -35,6 +35,7 @@ const TIER_GROUPS: Array<{
 export default function GamemodePage() {
   const { id } = useParams({ from: "/gamemodes/$id" });
   const gamemode = GAMEMODES.find((g) => g.id === id);
+  const { data: players = [], isLoading } = useApprovedPlayers();
 
   if (!gamemode) {
     return (
@@ -58,8 +59,9 @@ export default function GamemodePage() {
     );
   }
 
-  const rankedPlayers = PLAYERS.filter((p) => p.ranks[id as GamemodeId])
-    .map((p) => ({ player: p, tier: p.ranks[id as GamemodeId]! }))
+  const rankedPlayers = players
+    .filter((p) => p.ranks[id as GamemodeId])
+    .map((p) => ({ player: p, tier: p.ranks[id as GamemodeId]! as Tier }))
     .sort((a, b) => TIER_ORDER.indexOf(a.tier) - TIER_ORDER.indexOf(b.tier));
 
   return (
@@ -100,102 +102,123 @@ export default function GamemodePage() {
               </h1>
               <p style={{ color: "#9AA3B2" }}>{gamemode.description}</p>
               <p className="text-sm mt-1" style={{ color: "#9AA3B2" }}>
-                {rankedPlayers.length} players ranked
+                {isLoading
+                  ? "Loading..."
+                  : `${rankedPlayers.length} players ranked`}
               </p>
             </div>
           </div>
         </div>
 
-        <div className="flex flex-col gap-10" data-ocid="gamemode.list">
-          {TIER_GROUPS.map(({ label, prefix, desc }) => {
-            const groupPlayers = rankedPlayers.filter(
-              ({ tier }) => getTierCategory(tier) === prefix,
-            );
-            const colors = getTierColor(`${prefix}1` as Tier);
-            if (groupPlayers.length === 0) return null;
-            return (
-              <div key={prefix}>
-                <div className="flex items-center gap-3 mb-4">
-                  <span
-                    className="px-4 py-1.5 rounded-full text-xs font-bold tracking-widest"
-                    style={{
-                      backgroundColor: colors.bg,
-                      color: colors.text,
-                      border: `1px solid ${colors.text}44`,
-                      boxShadow: `0 0 15px ${colors.glow}30`,
-                      fontFamily: "BricolageGrotesque",
-                      letterSpacing: "0.15em",
-                    }}
-                  >
-                    {label}
-                  </span>
-                  <span className="text-xs" style={{ color: "#9AA3B2" }}>
-                    {desc}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {groupPlayers.map(({ player, tier }, i) => (
-                    <Link
-                      key={player.username}
-                      to="/players/$username"
-                      params={{ username: player.username }}
-                      data-ocid={`gamemode.item.${i + 1}`}
-                      className="flex items-center gap-3 rounded-xl px-4 py-3 transition-all duration-200"
-                      style={{
-                        backgroundColor: "#141821",
-                        border: `1px solid ${colors.text}20`,
-                        textDecoration: "none",
-                      }}
-                      onMouseEnter={(e) => {
-                        (
-                          e.currentTarget as HTMLAnchorElement
-                        ).style.borderColor = `${colors.text}50`;
-                        (e.currentTarget as HTMLAnchorElement).style.boxShadow =
-                          `0 0 15px ${colors.glow}20`;
-                      }}
-                      onMouseLeave={(e) => {
-                        (
-                          e.currentTarget as HTMLAnchorElement
-                        ).style.borderColor = `${colors.text}20`;
-                        (e.currentTarget as HTMLAnchorElement).style.boxShadow =
-                          "none";
-                      }}
-                    >
-                      <div
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
-                        style={{
-                          background: `linear-gradient(135deg, ${colors.text}60, ${colors.text}30)`,
-                          color: "#fff",
-                        }}
-                      >
-                        {player.username.charAt(0)}
-                      </div>
-                      <span
-                        className="flex-1 font-semibold text-sm"
-                        style={{
-                          color: "#F2F5FF",
-                          fontFamily: "BricolageGrotesque",
-                        }}
-                      >
-                        {player.username}
-                      </span>
-                      <TierBadge tier={tier} size="sm" />
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {rankedPlayers.length === 0 && (
-          <div className="text-center py-20" data-ocid="gamemode.empty_state">
-            <div className="text-5xl mb-4">📋</div>
-            <p style={{ color: "#9AA3B2" }}>
-              No players ranked in this gamemode yet.
-            </p>
+        {isLoading ? (
+          <div className="flex flex-col gap-1.5">
+            {["s1", "s2", "s3", "s4", "s5", "s6"].map((sk) => (
+              <div
+                key={sk}
+                className="h-16 rounded-xl animate-pulse"
+                style={{ backgroundColor: "#141821" }}
+              />
+            ))}
           </div>
+        ) : (
+          <>
+            <div className="flex flex-col gap-10" data-ocid="gamemode.list">
+              {TIER_GROUPS.map(({ label, prefix, desc }) => {
+                const groupPlayers = rankedPlayers.filter(
+                  ({ tier }) => getTierCategory(tier) === prefix,
+                );
+                const colors = getTierColor(`${prefix}1` as Tier);
+                if (groupPlayers.length === 0) return null;
+                return (
+                  <div key={prefix}>
+                    <div className="flex items-center gap-3 mb-4">
+                      <span
+                        className="px-4 py-1.5 rounded-full text-xs font-bold tracking-widest"
+                        style={{
+                          backgroundColor: colors.bg,
+                          color: colors.text,
+                          border: `1px solid ${colors.text}44`,
+                          boxShadow: `0 0 15px ${colors.glow}30`,
+                          fontFamily: "BricolageGrotesque",
+                          letterSpacing: "0.15em",
+                        }}
+                      >
+                        {label}
+                      </span>
+                      <span className="text-xs" style={{ color: "#9AA3B2" }}>
+                        {desc}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {groupPlayers.map(({ player, tier }, i) => (
+                        <Link
+                          key={player.username}
+                          to="/players/$username"
+                          params={{ username: player.username }}
+                          data-ocid={`gamemode.item.${i + 1}`}
+                          className="flex items-center gap-3 rounded-xl px-4 py-3 transition-all duration-200"
+                          style={{
+                            backgroundColor: "#141821",
+                            border: `1px solid ${colors.text}20`,
+                            textDecoration: "none",
+                          }}
+                          onMouseEnter={(e) => {
+                            (
+                              e.currentTarget as HTMLAnchorElement
+                            ).style.borderColor = `${colors.text}50`;
+                            (
+                              e.currentTarget as HTMLAnchorElement
+                            ).style.boxShadow = `0 0 15px ${colors.glow}20`;
+                          }}
+                          onMouseLeave={(e) => {
+                            (
+                              e.currentTarget as HTMLAnchorElement
+                            ).style.borderColor = `${colors.text}20`;
+                            (
+                              e.currentTarget as HTMLAnchorElement
+                            ).style.boxShadow = "none";
+                          }}
+                        >
+                          <div
+                            className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                            style={{
+                              background: `linear-gradient(135deg, ${colors.text}60, ${colors.text}30)`,
+                              color: "#fff",
+                            }}
+                          >
+                            {player.username.charAt(0)}
+                          </div>
+                          <span
+                            className="flex-1 font-semibold text-sm"
+                            style={{
+                              color: "#F2F5FF",
+                              fontFamily: "BricolageGrotesque",
+                            }}
+                          >
+                            {player.username}
+                          </span>
+                          <TierBadge tier={tier} size="sm" />
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {rankedPlayers.length === 0 && (
+              <div
+                className="text-center py-20"
+                data-ocid="gamemode.empty_state"
+              >
+                <div className="text-5xl mb-4">📋</div>
+                <p style={{ color: "#9AA3B2" }}>
+                  No players ranked in this gamemode yet.
+                </p>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
