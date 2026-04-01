@@ -21,22 +21,21 @@ export default function HomePage() {
     return map;
   }, [profiles]);
 
-  // Rank players by average tier index across all gamemodes (hidden overall score)
+  // Rank ALL approved players — those with ranks sorted by overall tier score,
+  // unranked players (no gamemodes assigned yet) sorted to the bottom.
   const rankedPlayers = useMemo(() => {
-    return players
+    const withRanks = players
       .map((p) => {
         const tiers = Object.values(p.ranks).filter(Boolean) as Tier[];
-        if (tiers.length === 0) return null;
+        if (tiers.length === 0)
+          return { player: p, avgScore: Number.POSITIVE_INFINITY };
         const avgScore =
           tiers.reduce((sum, t) => sum + TIER_ORDER.indexOf(t), 0) /
           tiers.length;
         return { player: p, avgScore };
       })
-      .filter(
-        (x): x is { player: (typeof players)[0]; avgScore: number } =>
-          x !== null,
-      )
       .sort((a, b) => a.avgScore - b.avgScore);
+    return withRanks;
   }, [players]);
 
   return (
@@ -72,10 +71,12 @@ export default function HomePage() {
             </div>
           ) : rankedPlayers.length > 0 ? (
             <div className="flex flex-col gap-1.5" data-ocid="leaderboard.list">
-              {rankedPlayers.map(({ player }, i) => (
+              {rankedPlayers.map(({ player, avgScore }, i) => (
                 <LeaderboardRow
                   key={player.username}
-                  rank={i + 1}
+                  rank={
+                    avgScore === Number.POSITIVE_INFINITY ? undefined : i + 1
+                  }
                   player={player}
                   ranks={player.ranks}
                   index={i + 1}

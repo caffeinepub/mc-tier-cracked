@@ -10,7 +10,7 @@ import {
 import GamemodeIcon from "./GamemodeIcon";
 
 interface LeaderboardRowProps {
-  rank: number;
+  rank?: number;
   player: Player;
   ranks: Partial<Record<GamemodeId, Tier>>;
   modeId?: GamemodeId;
@@ -85,7 +85,7 @@ export default function LeaderboardRow({
   tags = [],
 }: LeaderboardRowProps) {
   const [c1, c2] = getAvatarColors(player.username);
-  const isTop3 = rank <= 3;
+  const isTop3 = rank !== undefined && rank <= 3;
   const rankColors = ["#FFD700", "#C0C0C0", "#CD7F32"];
   const visibleTags = tags.slice(0, 2);
 
@@ -130,11 +130,19 @@ export default function LeaderboardRow({
         style={{
           fontFamily: "BricolageGrotesque",
           fontSize: "15px",
-          color: isTop3 ? rankColors[rank - 1] : "#9AA3B2",
-          textShadow: isTop3 ? `0 0 12px ${rankColors[rank - 1]}90` : "none",
+          color:
+            isTop3 && rank !== undefined
+              ? rankColors[rank - 1]
+              : rank !== undefined
+                ? "#9AA3B2"
+                : "#555",
+          textShadow:
+            isTop3 && rank !== undefined
+              ? `0 0 12px ${rankColors[rank - 1]}90`
+              : "none",
         }}
       >
-        #{rank}
+        {rank !== undefined ? `#${rank}` : "–"}
       </div>
 
       {/* Avatar */}
@@ -170,7 +178,7 @@ export default function LeaderboardRow({
       </div>
 
       {/* Gamemode tier chips */}
-      {rankedModes.length > 0 && (
+      {rankedModes.length > 0 ? (
         <div
           className="flex items-center gap-1.5 flex-shrink-0 overflow-x-auto"
           style={{ maxWidth: "min(55%, 360px)", scrollbarWidth: "none" }}
@@ -209,9 +217,16 @@ export default function LeaderboardRow({
             );
           })}
         </div>
+      ) : (
+        <span
+          className="text-xs flex-shrink-0"
+          style={{ color: "#555", fontStyle: "italic" }}
+        >
+          Unranked
+        </span>
       )}
 
-      {modeName && (
+      {modeName && rankedModes.length > 0 && (
         <span
           className="hidden sm:block text-xs flex-shrink-0"
           style={{ color: "#9AA3B2" }}

@@ -22,10 +22,24 @@ export default function LeaderboardPage() {
     return map;
   }, [profiles]);
 
-  const rankedPlayers = players
-    .filter((p) => p.ranks[selectedMode])
-    .map((p) => ({ player: p, tier: p.ranks[selectedMode]! as Tier }))
-    .sort((a, b) => TIER_ORDER.indexOf(a.tier) - TIER_ORDER.indexOf(b.tier));
+  // Show ALL approved players — those with a rank in the mode come first (sorted by tier),
+  // then unranked players appear at the bottom.
+  const rankedPlayers = useMemo(() => {
+    const withRank = players
+      .filter((p) => p.ranks[selectedMode])
+      .map((p) => ({
+        player: p,
+        tier: p.ranks[selectedMode]! as Tier,
+        hasRank: true,
+      }))
+      .sort((a, b) => TIER_ORDER.indexOf(a.tier) - TIER_ORDER.indexOf(b.tier));
+
+    const withoutRank = players
+      .filter((p) => !p.ranks[selectedMode])
+      .map((p) => ({ player: p, tier: null as Tier | null, hasRank: false }));
+
+    return [...withRank, ...withoutRank];
+  }, [players, selectedMode]);
 
   const selectedGamemode = GAMEMODES.find((g) => g.id === selectedMode);
 
@@ -98,7 +112,7 @@ export default function LeaderboardPage() {
               className="ml-auto text-sm font-bold"
               style={{ color: "#23D7FF" }}
             >
-              {rankedPlayers.length} players
+              {players.length} players
             </span>
           </div>
         )}
@@ -118,10 +132,10 @@ export default function LeaderboardPage() {
           </div>
         ) : rankedPlayers.length > 0 ? (
           <div className="flex flex-col gap-1.5" data-ocid="leaderboard.list">
-            {rankedPlayers.map(({ player }, i) => (
+            {rankedPlayers.map(({ player, hasRank }, i) => (
               <LeaderboardRow
                 key={player.username}
-                rank={i + 1}
+                rank={hasRank ? i + 1 : undefined}
                 player={player}
                 ranks={player.ranks}
                 modeId={selectedMode}

@@ -230,6 +230,9 @@ actor {
 
   // After upgrade: restore from stable arrays + migrate V1 applications
   system func postupgrade() {
+    // Restore all persistent data from stable storage (this is required on upgrades;
+    // actor body expressions like restoreFromStable() only run on fresh install, not upgrades)
+    restoreFromStable();
     // Migrate any V1 applications not yet in V2
     for ((principal, appV1) in applications.entries()) {
       if (not applicationsV2.containsKey(principal)) {
