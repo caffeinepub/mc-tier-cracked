@@ -303,7 +303,10 @@ export function getTopRankForMode(
   return player.ranks[modeId] ?? null;
 }
 
-export function getTierCategory(tier: Tier): "HT" | "MT" | "LT" {
+export function getTierCategory(
+  tier: Tier | undefined | null,
+): "HT" | "MT" | "LT" {
+  if (!tier) return "LT";
   if (tier.startsWith("HT")) return "HT";
   if (tier.startsWith("MT")) return "MT";
   return "LT";

@@ -2,28 +2,29 @@ import { useNavigate } from "@tanstack/react-router";
 import {
   CheckCircle,
   Clock,
-  FlaskConical,
   Loader2,
+  Star,
+  UserPlus,
   XCircle,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { ApplicationStatus, Player as BackendPlayer } from "../backend.d";
+import { Tier } from "../backend.d";
 import GamemodeIcon from "../components/GamemodeIcon";
 import SectionHeader from "../components/SectionHeader";
 import TierBadge from "../components/TierBadge";
-import { GAMEMODES, TIER_ORDER } from "../data/dummyData";
-import type { GamemodeId, Tier as LocalTier } from "../data/dummyData";
+import { GAMEMODES } from "../data/dummyData";
+import type { GamemodeId } from "../data/dummyData";
 import { useAuth } from "../hooks/useAuth";
 import {
+  useAllApplicationsWithPrincipals,
+  useAllProfiles,
+  useCallerProfileEntry,
   useOwnedApplications,
-  useSubmitApplication,
+  useTesterSubmitForOtherPlayer,
 } from "../hooks/useQueries";
-import {
-  ALL_TIER_OPTIONS,
-  backendTierToLocal,
-  localTierToBackend,
-} from "../utils/playerUtils";
+import { backendTierToLocal } from "../utils/playerUtils";
 
 const GAMEMODE_FIELDS: Array<{
   id: GamemodeId;
@@ -76,6 +77,25 @@ const GAMEMODE_FIELDS: Array<{
   },
 ];
 
+const TIER_OPTIONS: Tier[] = [
+  Tier.ht1,
+  Tier.ht2,
+  Tier.ht3,
+  Tier.ht4,
+  Tier.ht5,
+  Tier.mt1,
+  Tier.mt2,
+  Tier.mt3,
+  Tier.mt4,
+  Tier.mt5,
+  Tier.lt1,
+  Tier.lt2,
+  Tier.lt3,
+  Tier.lt4,
+  Tier.lt5,
+  Tier.none,
+];
+
 function StatusBadge({ status }: { status: ApplicationStatus | string }) {
   const s = typeof status === "string" ? status : Object.keys(status)[0];
   if (s === "pending") {
@@ -125,18 +145,294 @@ function StatusBadge({ status }: { status: ApplicationStatus | string }) {
 
 const SKELETON_KEYS = ["sk-1", "sk-2", "sk-3"];
 
+// ── Tier Tester Panel ────────────────────────────────────────────────────────
+
+function TierTesterPanel() {
+  const { data: profiles = [], isLoading: profilesLoading } = useAllProfiles();
+  const { data: appsWithPrincipals = [] } = useAllApplicationsWithPrincipals();
+  const submitForOtherMutation = useTesterSubmitForOtherPlayer();
+
+  const [selectedPrincipal, setSelectedPrincipal] = useState("");
+  const [ranks, setRanks] = useState<Record<string, string>>(
+    Object.fromEntries(
+      GAMEMODE_FIELDS.map((f) => [f.playerKey as string, "none"]),
+    ),
+  );
+
+  // Build set of already-approved principals
+  const approvedPrincipals = new Set<string>(
+    appsWithPrincipals
+      .filter((entry: any) => {
+        const status = entry.application?.status;
+        return (
+          status === "approved" ||
+          (typeof status === "object" &&
+            status !== null &&
+            "approved" in status)
+        );
+      })
+      .map((entry: any) => {
+        const p = entry.principal;
+        return typeof p === "string" ? p : (p?.toText?.() ?? String(p));
+      }),
+  );
+
+  const filteredProfiles = profiles.filter((p: any) => {
+    const pStr =
+      typeof p.principal === "string"
+        ? p.principal
+        : (p.principal?.toText?.() ?? String(p.principal));
+    return !approvedPrincipals.has(pStr);
+  });
+
+  const selectedProfile = filteredProfiles.find((p: any) => {
+    const pStr =
+      typeof p.principal === "string"
+        ? p.principal
+        : (p.principal?.toText?.() ?? String(p.principal));
+    return pStr === selectedPrincipal;
+  });
+
+  function updateRank(key: string, val: string) {
+    setRanks((prev) => ({ ...prev, [key]: val }));
+  }
+
+  async function handleSubmitForApproval() {
+    if (!selectedPrincipal || !selectedProfile) {
+      toast.error("Select a player first");
+      return;
+    }
+    const nonNone = GAMEMODE_FIELDS.filter(
+      (f) => ranks[f.playerKey as string] !== "none",
+    );
+    if (nonNone.length === 0) {
+      toast.error("Assign at least one rank");
+      return;
+    }
+    try {
+      const { Principal } = await import("@icp-sdk/core/principal");
+      const target = Principal.fromText(selectedPrincipal);
+      const playerData: any = {
+        username: selectedProfile.name ?? "",
+        discord: null,
+        axePvpTier: (ranks.axePvpTier as Tier) ?? Tier.none,
+        swordPvpTier: (ranks.swordPvpTier as Tier) ?? Tier.none,
+        crystalPvpTier: (ranks.crystalPvpTier as Tier) ?? Tier.none,
+        uhcTier: (ranks.uhcTier as Tier) ?? Tier.none,
+        nethpotTier: (ranks.nethpotTier as Tier) ?? Tier.none,
+        smpPvpTier: (ranks.smpPvpTier as Tier) ?? Tier.none,
+        macePvpTier: (ranks.macePvpTier as Tier) ?? Tier.none,
+        cartPvpTier: (ranks.cartPvpTier as Tier) ?? Tier.none,
+        overallTier: Tier.none,
+        tags: [],
+      };
+      await submitForOtherMutation.mutateAsync({ target, playerData });
+      toast.success("Player submitted for admin approval!");
+      setSelectedPrincipal("");
+      setRanks(
+        Object.fromEntries(
+          GAMEMODE_FIELDS.map((f) => [f.playerKey as string, "none"]),
+        ),
+      );
+    } catch (err: any) {
+      toast.error(err?.message ?? "Failed to submit. Please try again.");
+    }
+  }
+
+  const inputStyle = {
+    backgroundColor: "#0B0D10",
+    border: "1px solid rgba(168,85,247,0.3)",
+    color: "#F2F5FF",
+  };
+
+  return (
+    <div
+      className="rounded-2xl p-6 mb-6"
+      style={{
+        backgroundColor: "#141821",
+        border: "1px solid rgba(168,85,247,0.35)",
+        boxShadow: "0 0 30px rgba(168,85,247,0.08)",
+      }}
+    >
+      <div className="flex items-center gap-2 mb-5">
+        <Star size={18} style={{ color: "#A855F7" }} />
+        <h2
+          className="text-lg font-bold tracking-widest"
+          style={{
+            color: "#F2F5FF",
+            fontFamily: "BricolageGrotesque",
+            letterSpacing: "0.1em",
+          }}
+        >
+          TIER TESTER — ADD PLAYER
+        </h2>
+        <span
+          className="ml-auto text-xs font-bold px-2 py-0.5 rounded-full"
+          style={{
+            color: "#A855F7",
+            backgroundColor: "rgba(168,85,247,0.1)",
+            border: "1px solid rgba(168,85,247,0.3)",
+          }}
+        >
+          TIER TESTER
+        </span>
+      </div>
+
+      <p className="text-xs mb-5" style={{ color: "#9AA3B2" }}>
+        Select a registered player, assign their gamemode ranks, then submit for
+        admin approval.
+      </p>
+
+      {/* Player selector */}
+      <div className="flex flex-col gap-1.5 mb-5">
+        <label
+          htmlFor="tier-tester-player-select"
+          className="text-xs font-bold tracking-widest"
+          style={{ color: "#9AA3B2", letterSpacing: "0.1em" }}
+        >
+          SELECT PLAYER
+        </label>
+        {profilesLoading ? (
+          <div
+            className="h-10 rounded-lg animate-pulse"
+            style={{ backgroundColor: "#0B0D10" }}
+            data-ocid="tiertester.loading_state"
+          />
+        ) : (
+          <select
+            id="tier-tester-player-select"
+            value={selectedPrincipal}
+            onChange={(e) => setSelectedPrincipal(e.target.value)}
+            data-ocid="tiertester.select"
+            className="px-3 py-2.5 rounded-lg text-sm font-medium outline-none transition-all duration-200"
+            style={inputStyle}
+          >
+            <option value="">— choose a player —</option>
+            {filteredProfiles.map((p: any) => {
+              const pStr =
+                typeof p.principal === "string"
+                  ? p.principal
+                  : (p.principal?.toText?.() ?? String(p.principal));
+              return (
+                <option
+                  key={pStr}
+                  value={pStr}
+                  style={{ backgroundColor: "#141821" }}
+                >
+                  {p.name ?? pStr.slice(0, 12)}
+                </option>
+              );
+            })}
+          </select>
+        )}
+      </div>
+
+      {/* Rank selectors */}
+      <div className="mb-5">
+        <p
+          className="text-xs font-bold tracking-widest mb-3"
+          style={{ color: "#9AA3B2", letterSpacing: "0.1em" }}
+        >
+          ASSIGN RANKS
+        </p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {GAMEMODE_FIELDS.map((field) => {
+            const gm = GAMEMODES.find((g) => g.id === field.id);
+            return (
+              <div key={field.backendKey} className="flex flex-col gap-1.5">
+                <div className="flex items-center gap-1.5">
+                  <GamemodeIcon id={field.id} size={14} />
+                  <span
+                    className="text-xs font-semibold"
+                    style={{ color: "#9AA3B2" }}
+                  >
+                    {gm?.name ?? field.label}
+                  </span>
+                </div>
+                <select
+                  value={ranks[field.playerKey as string]}
+                  onChange={(e) =>
+                    updateRank(field.playerKey as string, e.target.value)
+                  }
+                  className="px-3 py-2 rounded-lg text-xs font-bold outline-none transition-all duration-200 cursor-pointer"
+                  style={{
+                    backgroundColor: "#0B0D10",
+                    border: "1px solid rgba(168,85,247,0.25)",
+                    color:
+                      ranks[field.playerKey as string] === "none"
+                        ? "#9AA3B2"
+                        : "#A855F7",
+                    fontFamily: "Satoshi",
+                  }}
+                >
+                  {TIER_OPTIONS.map((t) => (
+                    <option
+                      key={t}
+                      value={t}
+                      style={{ backgroundColor: "#141821" }}
+                    >
+                      {t === Tier.none ? "None" : t}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <button
+        type="button"
+        onClick={handleSubmitForApproval}
+        disabled={submitForOtherMutation.isPending || !selectedPrincipal}
+        data-ocid="tiertester.submit_button"
+        className="flex items-center justify-center gap-2 px-6 py-3 rounded-full text-sm font-bold tracking-widest transition-all duration-300 w-full"
+        style={{
+          background:
+            submitForOtherMutation.isPending || !selectedPrincipal
+              ? "rgba(168,85,247,0.15)"
+              : "linear-gradient(135deg, #A855F7, #7C3AED)",
+          color: "#fff",
+          letterSpacing: "0.1em",
+          boxShadow:
+            submitForOtherMutation.isPending || !selectedPrincipal
+              ? "none"
+              : "0 0 20px rgba(168,85,247,0.3)",
+          cursor:
+            submitForOtherMutation.isPending || !selectedPrincipal
+              ? "not-allowed"
+              : "pointer",
+        }}
+      >
+        {submitForOtherMutation.isPending ? (
+          <>
+            <Loader2 size={14} className="animate-spin" /> SUBMITTING...
+          </>
+        ) : (
+          <>
+            <UserPlus size={14} /> SUBMIT FOR APPROVAL
+          </>
+        )}
+      </button>
+    </div>
+  );
+}
+
+// ── Main TesterPage ──────────────────────────────────────────────────────────
+
 export default function TesterPage() {
   const navigate = useNavigate();
   const { role, isLoggedIn, isLoading } = useAuth();
   const { data: ownedApps = [], isLoading: appsLoading } =
     useOwnedApplications();
-  const submitMutation = useSubmitApplication();
+  const { data: callerEntry } = useCallerProfileEntry();
 
-  const [username, setUsername] = useState("");
-  const [discord, setDiscord] = useState("");
-  const [tiers, setTiers] = useState<Record<string, string>>(
-    Object.fromEntries(GAMEMODE_FIELDS.map((f) => [f.backendKey, "none"])),
-  );
+  const hasTierTesterTag =
+    callerEntry?.tags?.some(
+      (t: any) =>
+        t === "tierTester" ||
+        (typeof t === "object" && t !== null && "tierTester" in t),
+    ) ?? false;
 
   useEffect(() => {
     if (
@@ -150,48 +446,6 @@ export default function TesterPage() {
   if (isLoading || !role) return null;
   if (role !== "tester" && role !== "admin") return null;
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!username.trim()) {
-      toast.error("Username is required");
-      return;
-    }
-    const selected = GAMEMODE_FIELDS.map((f) => tiers[f.backendKey] || "none");
-    const nonNone = selected.filter((t) => t !== "none");
-    if (nonNone.length === 0) {
-      toast.error("Select at least one gamemode rank");
-      return;
-    }
-    const localTiersList = nonNone as LocalTier[];
-    const overallLocal = localTiersList.reduce((a, b) =>
-      TIER_ORDER.indexOf(a) <= TIER_ORDER.indexOf(b) ? a : b,
-    );
-
-    try {
-      await submitMutation.mutateAsync([
-        username.trim(),
-        discord.trim() || null,
-        localTierToBackend(tiers.axePvp),
-        localTierToBackend(tiers.swordPvp),
-        localTierToBackend(tiers.crystalPvp),
-        localTierToBackend(tiers.uhc),
-        localTierToBackend(tiers.nethpot),
-        localTierToBackend(tiers.smpPvp),
-        localTierToBackend(tiers.macePvp),
-        localTierToBackend(tiers.cartPvp),
-        localTierToBackend(overallLocal),
-      ]);
-      toast.success("Application submitted! Awaiting admin approval.");
-      setUsername("");
-      setDiscord("");
-      setTiers(
-        Object.fromEntries(GAMEMODE_FIELDS.map((f) => [f.backendKey, "none"])),
-      );
-    } catch {
-      toast.error("Failed to submit application. Please try again.");
-    }
-  }
-
   return (
     <div
       className="py-16 px-4"
@@ -203,188 +457,8 @@ export default function TesterPage() {
           subtitle="Submit player applications for admin review"
         />
 
-        {/* Submit Form */}
-        <div
-          className="rounded-2xl p-6 mb-10"
-          style={{
-            backgroundColor: "#141821",
-            border: "1px solid rgba(35,215,255,0.2)",
-            boxShadow: "0 0 30px rgba(35,215,255,0.06)",
-          }}
-        >
-          <div className="flex items-center gap-2 mb-6">
-            <FlaskConical size={18} style={{ color: "#23D7FF" }} />
-            <h2
-              className="text-lg font-bold tracking-widest"
-              style={{
-                color: "#F2F5FF",
-                fontFamily: "BricolageGrotesque",
-                letterSpacing: "0.1em",
-              }}
-            >
-              NEW APPLICATION
-            </h2>
-          </div>
-
-          <form
-            onSubmit={handleSubmit}
-            className="flex flex-col gap-5"
-            data-ocid="tester.panel"
-          >
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="flex flex-col gap-1.5">
-                <label
-                  htmlFor="app-username"
-                  className="text-xs font-bold tracking-widest"
-                  style={{ color: "#9AA3B2", letterSpacing: "0.1em" }}
-                >
-                  USERNAME *
-                </label>
-                <input
-                  id="app-username"
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="PlayerName"
-                  required
-                  data-ocid="tester.input"
-                  className="px-4 py-2.5 rounded-lg text-sm font-medium outline-none transition-all duration-200"
-                  style={{
-                    backgroundColor: "#0B0D10",
-                    border: "1px solid rgba(35,215,255,0.2)",
-                    color: "#F2F5FF",
-                    fontFamily: "Satoshi",
-                  }}
-                  onFocus={(e) => {
-                    e.target.style.borderColor = "rgba(35,215,255,0.5)";
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.borderColor = "rgba(35,215,255,0.2)";
-                  }}
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label
-                  htmlFor="app-discord"
-                  className="text-xs font-bold tracking-widest"
-                  style={{ color: "#9AA3B2", letterSpacing: "0.1em" }}
-                >
-                  DISCORD (optional)
-                </label>
-                <input
-                  id="app-discord"
-                  type="text"
-                  value={discord}
-                  onChange={(e) => setDiscord(e.target.value)}
-                  placeholder="username#0000"
-                  data-ocid="tester.input"
-                  className="px-4 py-2.5 rounded-lg text-sm font-medium outline-none transition-all duration-200"
-                  style={{
-                    backgroundColor: "#0B0D10",
-                    border: "1px solid rgba(35,215,255,0.2)",
-                    color: "#F2F5FF",
-                    fontFamily: "Satoshi",
-                  }}
-                  onFocus={(e) => {
-                    e.target.style.borderColor = "rgba(35,215,255,0.5)";
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.borderColor = "rgba(35,215,255,0.2)";
-                  }}
-                />
-              </div>
-            </div>
-
-            <div>
-              <p
-                className="text-xs font-bold tracking-widest mb-3"
-                style={{ color: "#9AA3B2", letterSpacing: "0.1em" }}
-              >
-                GAMEMODE RANKS
-              </p>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {GAMEMODE_FIELDS.map((field) => {
-                  const gm = GAMEMODES.find((g) => g.id === field.id);
-                  const selectId = `tier-${field.backendKey}`;
-                  return (
-                    <div
-                      key={field.backendKey}
-                      className="flex flex-col gap-1.5"
-                    >
-                      <div className="flex items-center gap-1.5">
-                        <GamemodeIcon id={field.id} size={14} />
-                        <label
-                          htmlFor={selectId}
-                          className="text-xs font-semibold"
-                          style={{ color: "#9AA3B2" }}
-                        >
-                          {gm?.name ?? field.label}
-                        </label>
-                      </div>
-                      <select
-                        id={selectId}
-                        value={tiers[field.backendKey]}
-                        onChange={(e) =>
-                          setTiers((prev) => ({
-                            ...prev,
-                            [field.backendKey]: e.target.value,
-                          }))
-                        }
-                        data-ocid="tester.select"
-                        className="px-3 py-2 rounded-lg text-xs font-bold outline-none transition-all duration-200 cursor-pointer"
-                        style={{
-                          backgroundColor: "#0B0D10",
-                          border: "1px solid rgba(35,215,255,0.2)",
-                          color:
-                            tiers[field.backendKey] === "none"
-                              ? "#9AA3B2"
-                              : "#23D7FF",
-                          fontFamily: "Satoshi",
-                        }}
-                      >
-                        {ALL_TIER_OPTIONS.map((t) => (
-                          <option
-                            key={t}
-                            value={t}
-                            style={{ backgroundColor: "#141821" }}
-                          >
-                            {t === "none" ? "None" : t}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={submitMutation.isPending}
-              data-ocid="tester.submit_button"
-              className="flex items-center justify-center gap-2 px-6 py-3 rounded-full text-sm font-bold tracking-widest transition-all duration-300"
-              style={{
-                background: submitMutation.isPending
-                  ? "rgba(35,215,255,0.15)"
-                  : "linear-gradient(135deg, #22D3EE, #A855F7)",
-                color: "#fff",
-                letterSpacing: "0.1em",
-                boxShadow: submitMutation.isPending
-                  ? "none"
-                  : "0 0 20px rgba(35,215,255,0.3)",
-                cursor: submitMutation.isPending ? "not-allowed" : "pointer",
-              }}
-            >
-              {submitMutation.isPending ? (
-                <>
-                  <Loader2 size={14} className="animate-spin" /> SUBMITTING...
-                </>
-              ) : (
-                "SUBMIT APPLICATION"
-              )}
-            </button>
-          </form>
-        </div>
+        {/* Tier Tester Panel — only visible when user has tierTester tag */}
+        {hasTierTesterTag && <TierTesterPanel />}
 
         {/* My Submissions */}
         <div>
@@ -422,9 +496,7 @@ export default function TesterPage() {
               }}
             >
               <div className="text-4xl mb-3">📋</div>
-              <p style={{ color: "#9AA3B2" }}>
-                No submissions yet. Submit your first application above.
-              </p>
+              <p style={{ color: "#9AA3B2" }}>No submissions yet.</p>
             </div>
           ) : (
             <div className="flex flex-col gap-3">

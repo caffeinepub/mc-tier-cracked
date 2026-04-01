@@ -25,20 +25,20 @@ export interface Application {
     player: Player;
     reviewer?: Principal;
 }
-export type Principal = Principal;
-export interface UserProfile {
-    name: string;
-    role: string;
+export interface ApplicationEntry {
+    principal: Principal;
+    submitterTags: Array<PlayerTag>;
+    application: Application;
 }
+export type Principal = Principal;
 export interface ProfileEntry {
     principal: Principal;
     name: string;
-    tags: PlayerTag[];
+    tags: Array<PlayerTag>;
 }
-export interface ApplicationEntry {
-    principal: Principal;
-    application: Application;
-    submitterTags: PlayerTag[];
+export interface UserProfile {
+    name: string;
+    role: string;
 }
 export enum ApplicationStatus {
     pending = "pending",
@@ -55,6 +55,12 @@ export enum Gamemode {
     crystalPvp = "crystalPvp",
     macePvp = "macePvp",
     cartPvp = "cartPvp"
+}
+export enum PlayerTag {
+    new_ = "new",
+    player = "player",
+    experienced = "experienced",
+    tierTester = "tierTester"
 }
 export enum Tier {
     ht1 = "ht1",
@@ -79,22 +85,16 @@ export enum UserRole {
     user = "user",
     guest = "guest"
 }
-export enum PlayerTag {
-    player = "player",
-    tierTester = "tierTester",
-    experienced = "experienced",
-    new_ = "new_"
-}
 export interface backendInterface {
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
+    assignPlayerTags(target: Principal, tags: Array<PlayerTag>): Promise<void>;
     assignTesterRole(user: Principal): Promise<void>;
-    assignPlayerTags(target: Principal, tags: PlayerTag[]): Promise<void>;
     banUser(target: Principal): Promise<void>;
-    unbanUser(target: Principal): Promise<void>;
-    getBannedUsers(): Promise<Principal[]>;
     deletePlayer(targetPlayer: Principal): Promise<void>;
     editPlayer(targetPlayer: Principal, playerData: Player): Promise<void>;
+    getAllProfiles(): Promise<Array<ProfileEntry>>;
     getApplication(userToReview: Principal): Promise<Application>;
+    getBannedUsers(): Promise<Array<Principal>>;
     getByGamemode(gamemode: Gamemode): Promise<Array<Player>>;
     getByTier(tier: Tier): Promise<Array<Player>>;
     getCallerUserProfile(): Promise<UserProfile | null>;
@@ -102,17 +102,21 @@ export interface backendInterface {
     getLeaderboard(): Promise<Array<Player>>;
     getOwnedApplications(): Promise<Array<Application>>;
     getPlayerByUsername(username: string): Promise<Player>;
-    getPlayerTags(target: Principal): Promise<PlayerTag[]>;
+    getPlayerTags(target: Principal): Promise<Array<PlayerTag>>;
     getProfileEntry(target: Principal): Promise<ProfileEntry | null>;
-    getAllProfiles(): Promise<Array<ProfileEntry>>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     isCallerAdmin(): Promise<boolean>;
-    listAllApprovedPlayers(): Promise<Array<Player>>;
     listAllApplicationsWithPrincipals(): Promise<Array<ApplicationEntry>>;
+    listAllApprovedPlayers(): Promise<Array<Player>>;
     listAllPendingApplications(): Promise<Array<Application>>;
     listAllUsernames(): Promise<Array<string>>;
     reviewApplication(userToReview: Principal, approve: boolean): Promise<void>;
     revokeTesterRole(user: Principal): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     submitApplication(username: string, discord: string | null, axePvp: Tier, swordPvp: Tier, crystalPvp: Tier, uhc: Tier, nethpot: Tier, smpPvp: Tier, macePvp: Tier, cartPvp: Tier, overall: Tier): Promise<void>;
+    unbanUser(target: Principal): Promise<void>;
+    adminCreatePendingApplication(target: Principal): Promise<void>;
+    adminUpdatePendingRanks(target: Principal, playerData: Player): Promise<void>;
+    claimAdminRoleWithPassword(password: string): Promise<void>;
+    testerSubmitForOtherPlayer(target: Principal, playerData: Player): Promise<void>;
 }

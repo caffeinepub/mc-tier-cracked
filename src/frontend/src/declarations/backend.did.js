@@ -14,6 +14,12 @@ export const UserRole = IDL.Variant({
   'guest' : IDL.Null,
 });
 export const Principal = IDL.Principal;
+export const PlayerTag = IDL.Variant({
+  'new' : IDL.Null,
+  'player' : IDL.Null,
+  'experienced' : IDL.Null,
+  'tierTester' : IDL.Null,
+});
 export const Tier = IDL.Variant({
   'ht1' : IDL.Null,
   'ht2' : IDL.Null,
@@ -45,6 +51,11 @@ export const Player = IDL.Record({
   'uhcTier' : Tier,
   'swordPvpTier' : Tier,
 });
+export const ProfileEntry = IDL.Record({
+  'principal' : Principal,
+  'name' : IDL.Text,
+  'tags' : IDL.Vec(PlayerTag),
+});
 export const ApplicationStatus = IDL.Variant({
   'pending' : IDL.Null,
   'approved' : IDL.Null,
@@ -67,14 +78,26 @@ export const Gamemode = IDL.Variant({
   'cartPvp' : IDL.Null,
 });
 export const UserProfile = IDL.Record({ 'name' : IDL.Text, 'role' : IDL.Text });
+export const ApplicationEntry = IDL.Record({
+  'principal' : Principal,
+  'submitterTags' : IDL.Vec(PlayerTag),
+  'application' : Application,
+});
 
 export const idlService = IDL.Service({
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+    'adminCreatePendingApplication' : IDL.Func([Principal], [], []),
+    'adminUpdatePendingRanks' : IDL.Func([Principal, Player], [], []),
+    'claimAdminRoleWithPassword' : IDL.Func([IDL.Text], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+  'assignPlayerTags' : IDL.Func([Principal, IDL.Vec(PlayerTag)], [], []),
   'assignTesterRole' : IDL.Func([Principal], [], []),
+  'banUser' : IDL.Func([Principal], [], []),
   'deletePlayer' : IDL.Func([Principal], [], []),
   'editPlayer' : IDL.Func([Principal, Player], [], []),
+  'getAllProfiles' : IDL.Func([], [IDL.Vec(ProfileEntry)], ['query']),
   'getApplication' : IDL.Func([Principal], [Application], ['query']),
+  'getBannedUsers' : IDL.Func([], [IDL.Vec(Principal)], ['query']),
   'getByGamemode' : IDL.Func([Gamemode], [IDL.Vec(Player)], ['query']),
   'getByTier' : IDL.Func([Tier], [IDL.Vec(Player)], ['query']),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
@@ -82,8 +105,15 @@ export const idlService = IDL.Service({
   'getLeaderboard' : IDL.Func([], [IDL.Vec(Player)], ['query']),
   'getOwnedApplications' : IDL.Func([], [IDL.Vec(Application)], ['query']),
   'getPlayerByUsername' : IDL.Func([IDL.Text], [Player], ['query']),
+  'getPlayerTags' : IDL.Func([Principal], [IDL.Vec(PlayerTag)], ['query']),
+  'getProfileEntry' : IDL.Func([Principal], [IDL.Opt(ProfileEntry)], ['query']),
   'getUserProfile' : IDL.Func([Principal], [IDL.Opt(UserProfile)], ['query']),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+  'listAllApplicationsWithPrincipals' : IDL.Func(
+      [],
+      [IDL.Vec(ApplicationEntry)],
+      ['query'],
+    ),
   'listAllApprovedPlayers' : IDL.Func([], [IDL.Vec(Player)], ['query']),
   'listAllPendingApplications' : IDL.Func(
       [],
@@ -111,6 +141,8 @@ export const idlService = IDL.Service({
       [],
       [],
     ),
+  'unbanUser' : IDL.Func([Principal], [], []),
+    'testerSubmitForOtherPlayer' : IDL.Func([Principal, Player], [], []),
 });
 
 export const idlInitArgs = [];
@@ -122,6 +154,12 @@ export const idlFactory = ({ IDL }) => {
     'guest' : IDL.Null,
   });
   const Principal = IDL.Principal;
+  const PlayerTag = IDL.Variant({
+    'new' : IDL.Null,
+    'player' : IDL.Null,
+    'experienced' : IDL.Null,
+    'tierTester' : IDL.Null,
+  });
   const Tier = IDL.Variant({
     'ht1' : IDL.Null,
     'ht2' : IDL.Null,
@@ -153,6 +191,11 @@ export const idlFactory = ({ IDL }) => {
     'uhcTier' : Tier,
     'swordPvpTier' : Tier,
   });
+  const ProfileEntry = IDL.Record({
+    'principal' : Principal,
+    'name' : IDL.Text,
+    'tags' : IDL.Vec(PlayerTag),
+  });
   const ApplicationStatus = IDL.Variant({
     'pending' : IDL.Null,
     'approved' : IDL.Null,
@@ -175,14 +218,26 @@ export const idlFactory = ({ IDL }) => {
     'cartPvp' : IDL.Null,
   });
   const UserProfile = IDL.Record({ 'name' : IDL.Text, 'role' : IDL.Text });
+  const ApplicationEntry = IDL.Record({
+    'principal' : Principal,
+    'submitterTags' : IDL.Vec(PlayerTag),
+    'application' : Application,
+  });
   
   return IDL.Service({
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+    'adminCreatePendingApplication' : IDL.Func([Principal], [], []),
+    'adminUpdatePendingRanks' : IDL.Func([Principal, Player], [], []),
+    'claimAdminRoleWithPassword' : IDL.Func([IDL.Text], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+    'assignPlayerTags' : IDL.Func([Principal, IDL.Vec(PlayerTag)], [], []),
     'assignTesterRole' : IDL.Func([Principal], [], []),
+    'banUser' : IDL.Func([Principal], [], []),
     'deletePlayer' : IDL.Func([Principal], [], []),
     'editPlayer' : IDL.Func([Principal, Player], [], []),
+    'getAllProfiles' : IDL.Func([], [IDL.Vec(ProfileEntry)], ['query']),
     'getApplication' : IDL.Func([Principal], [Application], ['query']),
+    'getBannedUsers' : IDL.Func([], [IDL.Vec(Principal)], ['query']),
     'getByGamemode' : IDL.Func([Gamemode], [IDL.Vec(Player)], ['query']),
     'getByTier' : IDL.Func([Tier], [IDL.Vec(Player)], ['query']),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
@@ -190,8 +245,19 @@ export const idlFactory = ({ IDL }) => {
     'getLeaderboard' : IDL.Func([], [IDL.Vec(Player)], ['query']),
     'getOwnedApplications' : IDL.Func([], [IDL.Vec(Application)], ['query']),
     'getPlayerByUsername' : IDL.Func([IDL.Text], [Player], ['query']),
+    'getPlayerTags' : IDL.Func([Principal], [IDL.Vec(PlayerTag)], ['query']),
+    'getProfileEntry' : IDL.Func(
+        [Principal],
+        [IDL.Opt(ProfileEntry)],
+        ['query'],
+      ),
     'getUserProfile' : IDL.Func([Principal], [IDL.Opt(UserProfile)], ['query']),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+    'listAllApplicationsWithPrincipals' : IDL.Func(
+        [],
+        [IDL.Vec(ApplicationEntry)],
+        ['query'],
+      ),
     'listAllApprovedPlayers' : IDL.Func([], [IDL.Vec(Player)], ['query']),
     'listAllPendingApplications' : IDL.Func(
         [],
@@ -219,6 +285,8 @@ export const idlFactory = ({ IDL }) => {
         [],
         [],
       ),
+    'unbanUser' : IDL.Func([Principal], [], []),
+    'testerSubmitForOtherPlayer' : IDL.Func([Principal, Player], [], []),
   });
 };
 

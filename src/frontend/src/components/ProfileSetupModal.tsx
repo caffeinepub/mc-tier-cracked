@@ -1,16 +1,19 @@
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useActor } from "../hooks/useActor";
 import { useAuth } from "../hooks/useAuth";
 import { useCallerProfile, useSaveUserProfile } from "../hooks/useQueries";
 
 export default function ProfileSetupModal() {
   const { isLoggedIn } = useAuth();
+  const { actor, isFetching: actorFetching } = useActor();
   const { data: profile, isLoading: profileLoading } = useCallerProfile();
   const saveMutation = useSaveUserProfile();
   const [username, setUsername] = useState("");
   const [error, setError] = useState("");
 
+  const actorReady = !!actor && !actorFetching;
   const shouldShow = isLoggedIn && !profileLoading && !profile;
   if (!shouldShow) return null;
 
@@ -18,6 +21,10 @@ export default function ProfileSetupModal() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!actorReady) {
+      setError("Still connecting, please wait a moment and try again.");
+      return;
+    }
     if (!isValid) {
       setError(
         "Username must be 3-20 characters (letters, numbers, underscore only)",
@@ -36,11 +43,17 @@ export default function ProfileSetupModal() {
         msg.toLowerCase().includes("exists")
       ) {
         setError("That username is already taken. Choose another.");
+      } else if (msg.toLowerCase().includes("not connected")) {
+        setError(
+          "Still connecting to the network. Please wait a moment and try again.",
+        );
       } else {
         setError("Failed to save profile. Please try again.");
       }
     }
   }
+
+  const isDisabled = saveMutation.isPending || !username || !actorReady;
 
   return (
     <div
@@ -125,25 +138,26 @@ export default function ProfileSetupModal() {
 
           <button
             type="submit"
-            disabled={saveMutation.isPending || !username}
+            disabled={isDisabled}
             data-ocid="profile.submit_button"
             className="flex items-center justify-center gap-2 w-full py-3 rounded-xl font-bold tracking-widest text-sm transition-all duration-200"
             style={{
               backgroundColor: "rgba(35,215,255,0.15)",
               color: "#23D7FF",
               border: "1px solid rgba(35,215,255,0.4)",
-              boxShadow: saveMutation.isPending
-                ? "none"
-                : "0 0 20px rgba(35,215,255,0.2)",
-              opacity: saveMutation.isPending || !username ? 0.6 : 1,
-              cursor:
-                saveMutation.isPending || !username ? "not-allowed" : "pointer",
+              boxShadow: isDisabled ? "none" : "0 0 20px rgba(35,215,255,0.2)",
+              opacity: isDisabled ? 0.6 : 1,
+              cursor: isDisabled ? "not-allowed" : "pointer",
             }}
           >
-            {saveMutation.isPending ? (
+            {saveMutation.isPending || actorFetching ? (
               <Loader2 size={16} className="animate-spin" />
             ) : null}
-            {saveMutation.isPending ? "SAVING..." : "CONFIRM USERNAME"}
+            {saveMutation.isPending
+              ? "SAVING..."
+              : actorFetching
+                ? "CONNECTING..."
+                : "CONFIRM USERNAME"}
           </button>
         </form>
       </div>

@@ -60,13 +60,23 @@ export default function LeaderboardPage() {
     selectedMode === "overall"
       ? players
           .map((p) => {
-            const tierIndices = Object.values(p.ranks).map((t) =>
-              TIER_ORDER.indexOf(t as Tier),
-            );
+            const tierValues = Object.values(p.ranks);
+            if (tierValues.length === 0) return null;
+            const tierIndices = tierValues
+              .map((t) => TIER_ORDER.indexOf(t as Tier))
+              .filter((i) => i >= 0);
+            if (tierIndices.length === 0) return null;
             const bestTierIdx = Math.min(...tierIndices);
             const bestTier = TIER_ORDER[bestTierIdx];
+            if (!bestTier) return null;
             return { player: p, tier: bestTier };
           })
+          .filter(
+            (
+              entry,
+            ): entry is { player: (typeof players)[number]; tier: Tier } =>
+              entry !== null,
+          )
           .sort(
             (a, b) => TIER_ORDER.indexOf(a.tier) - TIER_ORDER.indexOf(b.tier),
           )

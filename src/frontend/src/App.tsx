@@ -83,7 +83,7 @@ const testerRoute = createRoute({
 
 const adminRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: "/admin",
+  path: "/zodiac-control",
   component: AdminPage,
 });
 

@@ -15,6 +15,11 @@ export interface Application {
   'player' : Player,
   'reviewer' : [] | [Principal],
 }
+export interface ApplicationEntry {
+  'principal' : Principal,
+  'submitterTags' : Array<PlayerTag>,
+  'application' : Application,
+}
 export type ApplicationStatus = { 'pending' : null } |
   { 'approved' : null } |
   { 'rejected' : null };
@@ -40,7 +45,16 @@ export interface Player {
   'uhcTier' : Tier,
   'swordPvpTier' : Tier,
 }
+export type PlayerTag = { 'new' : null } |
+  { 'player' : null } |
+  { 'experienced' : null } |
+  { 'tierTester' : null };
 export type Principal = Principal;
+export interface ProfileEntry {
+  'principal' : Principal,
+  'name' : string,
+  'tags' : Array<PlayerTag>,
+}
 export type Tier = { 'ht1' : null } |
   { 'ht2' : null } |
   { 'ht3' : null } |
@@ -63,11 +77,18 @@ export type UserRole = { 'admin' : null } |
   { 'guest' : null };
 export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
+  'adminCreatePendingApplication' : ActorMethod<[Principal], undefined>,
+  'adminUpdatePendingRanks' : ActorMethod<[Principal, Player], undefined>,
+  'claimAdminRoleWithPassword' : ActorMethod<[string], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
+  'assignPlayerTags' : ActorMethod<[Principal, Array<PlayerTag>], undefined>,
   'assignTesterRole' : ActorMethod<[Principal], undefined>,
+  'banUser' : ActorMethod<[Principal], undefined>,
   'deletePlayer' : ActorMethod<[Principal], undefined>,
   'editPlayer' : ActorMethod<[Principal, Player], undefined>,
+  'getAllProfiles' : ActorMethod<[], Array<ProfileEntry>>,
   'getApplication' : ActorMethod<[Principal], Application>,
+  'getBannedUsers' : ActorMethod<[], Array<Principal>>,
   'getByGamemode' : ActorMethod<[Gamemode], Array<Player>>,
   'getByTier' : ActorMethod<[Tier], Array<Player>>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
@@ -75,8 +96,14 @@ export interface _SERVICE {
   'getLeaderboard' : ActorMethod<[], Array<Player>>,
   'getOwnedApplications' : ActorMethod<[], Array<Application>>,
   'getPlayerByUsername' : ActorMethod<[string], Player>,
+  'getPlayerTags' : ActorMethod<[Principal], Array<PlayerTag>>,
+  'getProfileEntry' : ActorMethod<[Principal], [] | [ProfileEntry]>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
+  'listAllApplicationsWithPrincipals' : ActorMethod<
+    [],
+    Array<ApplicationEntry>
+  >,
   'listAllApprovedPlayers' : ActorMethod<[], Array<Player>>,
   'listAllPendingApplications' : ActorMethod<[], Array<Application>>,
   'listAllUsernames' : ActorMethod<[], Array<string>>,
@@ -99,6 +126,8 @@ export interface _SERVICE {
     ],
     undefined
   >,
+  'unbanUser' : ActorMethod<[Principal], undefined>,
+  'testerSubmitForOtherPlayer' : ActorMethod<[Principal, Player], undefined>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

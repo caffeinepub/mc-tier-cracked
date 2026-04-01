@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type {
   Application,
   Tier as BackendTier,
+  Player,
   ProfileEntry,
   UserProfile,
 } from "../backend.d";
@@ -12,6 +13,7 @@ import { useActor } from "./useActor";
 import { useAuth } from "./useAuth";
 
 export { PlayerTag };
+export type { Player };
 
 export function useApprovedPlayers() {
   const { actor, isFetching } = useActor();
@@ -86,7 +88,7 @@ export function useAllApplicationsWithPrincipals() {
     queryFn: async () => {
       if (!actor) return [];
       try {
-        return await (actor as any).listAllApplicationsWithPrincipals();
+        return await actor.listAllApplicationsWithPrincipals();
       } catch {
         return [];
       }
@@ -168,7 +170,7 @@ export function useEditPlayer() {
     mutationFn: async ({
       principal,
       playerData,
-    }: { principal: any; playerData: any }) => {
+    }: { principal: any; playerData: Player }) => {
       if (!actor) throw new Error("Not connected");
       return actor.editPlayer(principal, playerData);
     },
@@ -187,7 +189,7 @@ export function useBanUser() {
   return useMutation({
     mutationFn: async (principal: any) => {
       if (!actor) throw new Error("Not connected");
-      return (actor as any).banUser(principal);
+      return actor.banUser(principal);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bannedUsers"] });
@@ -204,7 +206,7 @@ export function useUnbanUser() {
   return useMutation({
     mutationFn: async (principal: any) => {
       if (!actor) throw new Error("Not connected");
-      return (actor as any).unbanUser(principal);
+      return actor.unbanUser(principal);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bannedUsers"] });
@@ -219,7 +221,7 @@ export function useBannedUsers() {
     queryFn: async () => {
       if (!actor) return [];
       try {
-        return await (actor as any).getBannedUsers();
+        return await actor.getBannedUsers();
       } catch {
         return [];
       }
@@ -255,7 +257,7 @@ export function useAllProfiles() {
     queryFn: async () => {
       if (!actor) return [];
       try {
-        return await (actor as any).getAllProfiles();
+        return await actor.getAllProfiles();
       } catch {
         return [];
       }
@@ -304,10 +306,86 @@ export function useAssignPlayerTags() {
       tags,
     }: { principal: any; tags: PlayerTag[] }) => {
       if (!actor) throw new Error("Not connected");
-      return (actor as any).assignPlayerTags(principal, tags);
+      return actor.assignPlayerTags(principal, tags);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["allProfiles"] });
     },
+  });
+}
+
+export function useAdminCreatePendingApplication() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (principal: any) => {
+      if (!actor) throw new Error("Not connected");
+      return actor.adminCreatePendingApplication(principal);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["allApplicationsWithPrincipals"],
+      });
+    },
+  });
+}
+
+export function useAdminUpdatePendingRanks() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      principal,
+      playerData,
+    }: { principal: any; playerData: Player }) => {
+      if (!actor) throw new Error("Not connected");
+      return actor.adminUpdatePendingRanks(principal, playerData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["allApplicationsWithPrincipals"],
+      });
+    },
+  });
+}
+
+export function useTesterSubmitForOtherPlayer() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      target,
+      playerData,
+    }: { target: any; playerData: Player }) => {
+      if (!actor) throw new Error("Not connected");
+      // testerSubmitForOtherPlayer exists on Backend class but not on the
+      // backendInterface type — cast to any so runtime dispatch reaches the
+      // Backend method which handles Tier → Candid variant conversion.
+      return (actor as any).testerSubmitForOtherPlayer(target, playerData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["allApplicationsWithPrincipals"],
+      });
+    },
+  });
+}
+
+export function useCallerProfileEntry() {
+  const { actor, isFetching: actorFetching } = useActor();
+  const { isLoggedIn, principal } = useAuth();
+  return useQuery<ProfileEntry | null>({
+    queryKey: ["callerProfileEntry", principal],
+    queryFn: async () => {
+      if (!actor || !principal) return null;
+      try {
+        const { Principal } = await import("@icp-sdk/core/principal");
+        const p = Principal.fromText(principal);
+        return await actor.getProfileEntry(p);
+      } catch {
+        return null;
+      }
+    },
+    enabled: isLoggedIn && !!actor && !actorFetching && !!principal,
   });
 }

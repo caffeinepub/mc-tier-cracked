@@ -1,12 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import {
-  FlaskConical,
-  LogOut,
-  Menu,
-  ShieldCheck,
-  UserCircle,
-  X,
-} from "lucide-react";
+import { FlaskConical, LogOut, Menu, UserCircle, X } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "../hooks/useAuth";
 
@@ -20,12 +13,6 @@ const ROLE_BADGE: Record<
   string,
   { label: string; color: string; bg: string; border: string }
 > = {
-  admin: {
-    label: "ADMIN",
-    color: "#FFD700",
-    bg: "rgba(255,215,0,0.12)",
-    border: "rgba(255,215,0,0.4)",
-  },
   tester: {
     label: "TESTER",
     color: "#23D7FF",
@@ -49,14 +36,13 @@ export default function Navbar() {
   const shortPrincipal = principal
     ? `${principal.slice(0, 5)}...${principal.slice(-3)}`
     : "";
-  const badge = role ? ROLE_BADGE[role] : null;
+  const badge = role && role !== "admin" ? ROLE_BADGE[role] : null;
 
   const extraLinks = [
     ...(isLoggedIn ? [{ label: "MY PROFILE", href: "/profile" as const }] : []),
     ...(role === "tester" || role === "admin"
       ? [{ label: "TESTER", href: "/tester" as const }]
       : []),
-    ...(role === "admin" ? [{ label: "ADMIN", href: "/admin" as const }] : []),
   ];
 
   const allLinks = [...NAV_LINKS, ...extraLinks];
@@ -118,11 +104,6 @@ export default function Navbar() {
                 {link.label === "TESTER" ? (
                   <span className="flex items-center gap-1">
                     <FlaskConical size={12} />
-                    {link.label}
-                  </span>
-                ) : link.label === "ADMIN" ? (
-                  <span className="flex items-center gap-1">
-                    <ShieldCheck size={12} />
                     {link.label}
                   </span>
                 ) : link.label === "MY PROFILE" ? (

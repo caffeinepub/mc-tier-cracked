@@ -5,8 +5,11 @@ import Principal "mo:core/Principal";
 import Iter "mo:core/Iter";
 import Runtime "mo:core/Runtime";
 import Array "mo:core/Array";
+
 import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
+
+// All gamemodes and tiers
 
 actor {
   type Gamemode = {
@@ -74,20 +77,20 @@ actor {
     reviewer : ?Principal.Principal;
   };
 
-  public type UserProfile = {
+  type UserProfile = {
     name : Text;
     role : Text; // "Admin", "Tester", or "User"
   };
 
   // Profile with principal for leaderboard display
-  public type ProfileEntry = {
+  type ProfileEntry = {
     principal : Principal.Principal;
     name : Text;
     tags : [PlayerTag];
   };
 
   // Application entry with principal for admin view
-  public type ApplicationEntry = {
+  type ApplicationEntry = {
     principal : Principal.Principal;
     application : Application;
     submitterTags : [PlayerTag];
@@ -102,9 +105,8 @@ actor {
   let testerRoles = Map.empty<Principal.Principal, Bool>();
   let playerTags = Map.empty<Principal.Principal, [PlayerTag]>();
   let bannedUsers = Map.empty<Principal.Principal, Bool>();
-  // Maps profile usernames to principals for uniqueness enforcement
-  let profileUsernames = Map.empty<Text, Principal.Principal>();
 
+  // Helper functions
   func isTester(caller : Principal.Principal) : Bool {
     switch (testerRoles.get(caller)) {
       case (?isTester) { isTester };
@@ -121,6 +123,10 @@ actor {
       case (?b) { b };
       case (null) { false };
     };
+  };
+
+  func hasPlayerAccess(caller : Principal.Principal) : Bool {
+    isTesterOrAdmin(caller);
   };
 
   // Admin function to assign tester role
@@ -162,7 +168,9 @@ actor {
     };
     let list = List.empty<Principal.Principal>();
     for (entry in bannedUsers.entries()) {
-      if (entry.1) { list.add(entry.0) };
+      if (entry.1) {
+        list.add(entry.0);
+      };
     };
     list.toArray();
   };
@@ -186,6 +194,7 @@ actor {
   // Public - get all user profiles with their tags (for leaderboard)
   public query func getAllProfiles() : async [ProfileEntry] {
     let entries = List.empty<ProfileEntry>();
+
     for (entry in userProfiles.entries()) {
       let tags = switch (playerTags.get(entry.0)) {
         case (?t) { t };
@@ -249,28 +258,10 @@ actor {
     userProfiles.get(user);
   };
 
-  // Save profile with username uniqueness enforcement
+  // Save profile without username uniqueness enforcement
   public shared ({ caller }) func saveCallerUserProfile(profile : UserProfile) : async () {
     if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
       Runtime.trap("Unauthorized: Only users can save profiles");
-    };
-    // Check username uniqueness (allow updating own profile)
-    switch (profileUsernames.get(profile.name)) {
-      case (?existing) {
-        if (not Principal.equal(existing, caller)) {
-          Runtime.trap("Username already taken");
-        };
-      };
-      case (null) {
-        // Remove old username mapping if exists
-        switch (userProfiles.get(caller)) {
-          case (?oldProfile) {
-            profileUsernames.remove(oldProfile.name);
-          };
-          case (null) {};
-        };
-        profileUsernames.add(profile.name, caller);
-      };
     };
     userProfiles.add(caller, profile);
   };
@@ -280,11 +271,11 @@ actor {
     if (not isTesterOrAdmin(caller)) {
       Runtime.trap("Unauthorized: Only testers and admins can submit applications");
     };
-    
+
     if (playerUsernames.containsKey(username)) {
       Runtime.trap("Username already taken");
     };
-    
+
     let newPlayer : Player = {
       username;
       discord;
@@ -298,13 +289,13 @@ actor {
       cartPvpTier = cartPvp;
       overallTier = overall;
     };
-    
+
     let newApplication : Application = {
       player = newPlayer;
       status = #pending;
       reviewer = null;
     };
-    
+
     applications.add(caller, newApplication);
     playerUsernames.add(username, caller);
   };
@@ -314,7 +305,7 @@ actor {
     if (not AccessControl.isAdmin(accessControlState, caller)) {
       Runtime.trap("Unauthorized: Only admins can review applications");
     };
-    
+
     switch (applications.get(userToReview)) {
       case (?application) {
         if (application.status != #pending) {
@@ -335,9 +326,10 @@ actor {
     if (not isTesterOrAdmin(caller)) {
       Runtime.trap("Unauthorized: Only testers and admins can view applications");
     };
-    
+
     switch (applications.get(userToReview)) {
       case (?application) {
+        // Testers can only view their own applications, admins can view all
         if (not AccessControl.isAdmin(accessControlState, caller) and not Principal.equal(caller, userToReview)) {
           Runtime.trap("Unauthorized: Testers can only view their own applications");
         };
@@ -361,18 +353,31 @@ actor {
     if (not AccessControl.isAdmin(accessControlState, caller)) {
       Runtime.trap("Unauthorized: Only admins can edit players");
     };
-    
+
     switch (applications.get(targetPlayer)) {
       case (?application) {
-        playerUsernames.remove(application.player.username);
-        
+        // Check username uniqueness if username is being changed
+        if (application.player.username != playerData.username) {
+          switch (playerUsernames.get(playerData.username)) {
+            case (?existingPrincipal) {
+              if (not Principal.equal(existingPrincipal, targetPlayer)) {
+                Runtime.trap("Username already taken");
+              };
+            };
+            case (null) {};
+          };
+          // Remove old username mapping
+          playerUsernames.remove(application.player.username);
+          // Add new username mapping
+          playerUsernames.add(playerData.username, targetPlayer);
+        };
+
         let updatedApplication : Application = {
           player = playerData;
           status = #approved;
           reviewer = ?caller;
         };
         applications.add(targetPlayer, updatedApplication);
-        playerUsernames.add(playerData.username, targetPlayer);
       };
       case (null) { Runtime.trap("Player not found") };
     };
@@ -382,7 +387,7 @@ actor {
     if (not AccessControl.isAdmin(accessControlState, caller)) {
       Runtime.trap("Unauthorized: Only admins can delete players");
     };
-    
+
     switch (applications.get(targetPlayer)) {
       case (?application) {
         playerUsernames.remove(application.player.username);
@@ -430,7 +435,7 @@ actor {
     if (not isTesterOrAdmin(caller)) {
       Runtime.trap("Unauthorized: Only testers and admins can view applications");
     };
-    
+
     let ownedApps = List.empty<Application>();
     for (entry in applications.entries()) {
       if (Principal.equal(entry.0, caller)) {
@@ -476,9 +481,9 @@ actor {
 
   public query func listAllApprovedPlayers() : async [Player] {
     let approvedPlayers = List.empty<Player>();
-    for (entry in applications.values()) {
-      if (entry.status == #approved) {
-        approvedPlayers.add(entry.player);
+    for (entry in applications.entries()) {
+      if (entry.1.status == #approved and not isBanned(entry.0)) {
+        approvedPlayers.add(entry.1.player);
       };
     };
     approvedPlayers.toArray();
@@ -488,7 +493,7 @@ actor {
     if (not AccessControl.isAdmin(accessControlState, caller)) {
       Runtime.trap("Unauthorized: Only admins can view pending applications");
     };
-    
+
     let pendingApps = List.empty<Application>();
     for (application in applications.values()) {
       if (application.status == #pending) {
@@ -497,4 +502,127 @@ actor {
     };
     pendingApps.toArray();
   };
+  // Admin creates a pending application for any registered user
+  public shared ({ caller }) func adminCreatePendingApplication(target : Principal.Principal) : async () {
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Only admins can do this");
+    };
+    switch (applications.get(target)) {
+      case (?_) { Runtime.trap("Application already exists for this user") };
+      case (null) {
+        switch (userProfiles.get(target)) {
+          case (null) { Runtime.trap("User has no profile") };
+          case (?profile) {
+            if (playerUsernames.containsKey(profile.name)) {
+              // username mapping might already exist if previously deleted, skip adding
+              ignore ();
+            } else {
+              playerUsernames.add(profile.name, target);
+            };
+            let newApp : Application = {
+              player = {
+                username = profile.name;
+                discord = null;
+                axePvpTier = #none;
+                swordPvpTier = #none;
+                crystalPvpTier = #none;
+                uhcTier = #none;
+                nethpotTier = #none;
+                smpPvpTier = #none;
+                macePvpTier = #none;
+                cartPvpTier = #none;
+                overallTier = #none;
+              };
+              status = #pending;
+              reviewer = null;
+            };
+            applications.add(target, newApp);
+          };
+        };
+      };
+    };
+  };
+
+  // Admin updates ranks on a pending application without approving
+  public shared ({ caller }) func adminUpdatePendingRanks(target : Principal.Principal, playerData : Player) : async () {
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Only admins can do this");
+    };
+    switch (applications.get(target)) {
+      case (null) { Runtime.trap("Application not found") };
+      case (?application) {
+        let updated : Application = {
+          player = playerData;
+          status = application.status;
+          reviewer = application.reviewer;
+        };
+        applications.add(target, updated);
+      };
+    };
+  };
+
+
+  // Allow admin to claim role using the admin password directly (bypasses token system)
+  public shared ({ caller }) func claimAdminRoleWithPassword(password : Text) : async () {
+    let ADMIN_SECRET = "mctier@admin2024";
+    if (password != ADMIN_SECRET) {
+      Runtime.trap("Invalid admin password");
+    };
+    if (caller.isAnonymous()) {
+      Runtime.trap("Must be logged in with Internet Identity");
+    };
+    // Force-assign admin role (overrides any existing role)
+    accessControlState.userRoles.add(caller, #admin);
+    accessControlState.adminAssigned := true;
+  };
+
+  // Tier tester submits a registered user as a player for admin approval
+  public shared ({ caller }) func testerSubmitForOtherPlayer(target : Principal.Principal, playerData : Player) : async () {
+    let hasTierTesterTag = switch (playerTags.get(caller)) {
+      case (null) { false };
+      case (?tags) {
+        var i = 0;
+        var found = false;
+        while (i < tags.size() and not found) {
+          if (tags[i] == #tierTester) { found := true };
+          i += 1;
+        };
+        found
+      };
+    };
+    if (not hasTierTesterTag and not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Only tier testers can submit players for approval");
+    };
+    switch (userProfiles.get(target)) {
+      case (null) { Runtime.trap("Target user has no profile") };
+      case (?_profile) {
+        switch (applications.get(target)) {
+          case (?existing) {
+            if (existing.status == #approved) {
+              Runtime.trap("Player is already approved on the leaderboard");
+            };
+            let updated : Application = {
+              player = playerData;
+              status = #pending;
+              reviewer = null;
+            };
+            applications.add(target, updated);
+          };
+          case (null) {
+            if (not playerUsernames.containsKey(playerData.username)) {
+              playerUsernames.add(playerData.username, target);
+            };
+            let newApp : Application = {
+              player = playerData;
+              status = #pending;
+              reviewer = null;
+            };
+            applications.add(target, newApp);
+          };
+        };
+      };
+    };
+  };
+
+
 };
