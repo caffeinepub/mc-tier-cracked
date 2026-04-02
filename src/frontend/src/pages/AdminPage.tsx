@@ -350,16 +350,26 @@ function AdminGate({ onSuccess }: { onSuccess: () => void }) {
 type RanksState = Record<string, Tier>;
 
 function defaultRanks(player?: Partial<BackendPlayer>): RanksState {
-  const init: RanksState = { overallTier: Tier.none };
+  const init: RanksState = { overallTier: sanitizeTier(player?.overallTier) };
   for (const f of GAMEMODE_FIELDS) {
-    init[f.fieldKey] = (player?.[f.backendKey] as Tier) ?? Tier.none;
+    init[f.fieldKey] = sanitizeTier(player?.[f.backendKey]);
   }
   return init;
 }
 
 function sanitizeTier(v: unknown): Tier {
-  const valid = Object.values(Tier) as string[];
-  return valid.includes(v as string) ? (v as Tier) : Tier.none;
+  if (v === null || v === undefined) return Tier.none;
+  if (typeof v === "string") {
+    const valid = Object.values(Tier) as string[];
+    return valid.includes(v) ? (v as Tier) : Tier.none;
+  }
+  if (typeof v === "object") {
+    // Raw Candid variant like {ht1low: null} — extract the key
+    const key = Object.keys(v as object)[0];
+    const valid = Object.values(Tier) as string[];
+    return valid.includes(key) ? (key as Tier) : Tier.none;
+  }
+  return Tier.none;
 }
 
 function buildPlayerData(
@@ -880,15 +890,15 @@ function PendingApprovalsSection() {
       const playerData: BackendPlayer = {
         username: existingPlayer?.username ?? profile?.name ?? "",
         discord: existingPlayer?.discord ?? undefined,
-        axePvpTier: existingPlayer?.axePvpTier ?? Tier.none,
-        swordPvpTier: existingPlayer?.swordPvpTier ?? Tier.none,
-        crystalPvpTier: existingPlayer?.crystalPvpTier ?? Tier.none,
-        uhcTier: existingPlayer?.uhcTier ?? Tier.none,
-        nethpotTier: existingPlayer?.nethpotTier ?? Tier.none,
-        smpPvpTier: existingPlayer?.smpPvpTier ?? Tier.none,
-        macePvpTier: existingPlayer?.macePvpTier ?? Tier.none,
-        cartPvpTier: existingPlayer?.cartPvpTier ?? Tier.none,
-        overallTier: existingPlayer?.overallTier ?? Tier.none,
+        axePvpTier: sanitizeTier(existingPlayer?.axePvpTier),
+        swordPvpTier: sanitizeTier(existingPlayer?.swordPvpTier),
+        crystalPvpTier: sanitizeTier(existingPlayer?.crystalPvpTier),
+        uhcTier: sanitizeTier(existingPlayer?.uhcTier),
+        nethpotTier: sanitizeTier(existingPlayer?.nethpotTier),
+        smpPvpTier: sanitizeTier(existingPlayer?.smpPvpTier),
+        macePvpTier: sanitizeTier(existingPlayer?.macePvpTier),
+        cartPvpTier: sanitizeTier(existingPlayer?.cartPvpTier),
+        overallTier: sanitizeTier(existingPlayer?.overallTier),
       };
       await updateRanksMutation.mutateAsync({
         principal: entry.principal,

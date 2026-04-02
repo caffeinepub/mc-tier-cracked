@@ -150,6 +150,21 @@ function StatusBadge({ status }: { status: ApplicationStatus | string }) {
 
 const SKELETON_KEYS = ["sk-1", "sk-2", "sk-3"];
 
+function sanitizeTierValue(v: unknown): Tier {
+  if (v === null || v === undefined) return Tier.none;
+  if (typeof v === "string") {
+    const valid = Object.values(Tier) as string[];
+    return valid.includes(v) ? (v as Tier) : Tier.none;
+  }
+  if (typeof v === "object") {
+    // Raw Candid variant like {ht1low: null} — extract the key
+    const key = Object.keys(v as object)[0];
+    const valid = Object.values(Tier) as string[];
+    return valid.includes(key) ? (key as Tier) : Tier.none;
+  }
+  return Tier.none;
+}
+
 // ── Tier Tester Panel ────────────────────────────────────────────────────────
 
 function TierTesterPanel() {
@@ -220,14 +235,14 @@ function TierTesterPanel() {
       const playerData: any = {
         username: selectedProfile.name ?? "",
         discord: null,
-        axePvpTier: (ranks.axePvpTier as Tier) ?? Tier.none,
-        swordPvpTier: (ranks.swordPvpTier as Tier) ?? Tier.none,
-        crystalPvpTier: (ranks.crystalPvpTier as Tier) ?? Tier.none,
-        uhcTier: (ranks.uhcTier as Tier) ?? Tier.none,
-        nethpotTier: (ranks.nethpotTier as Tier) ?? Tier.none,
-        smpPvpTier: (ranks.smpPvpTier as Tier) ?? Tier.none,
-        macePvpTier: (ranks.macePvpTier as Tier) ?? Tier.none,
-        cartPvpTier: (ranks.cartPvpTier as Tier) ?? Tier.none,
+        axePvpTier: sanitizeTierValue(ranks.axePvpTier),
+        swordPvpTier: sanitizeTierValue(ranks.swordPvpTier),
+        crystalPvpTier: sanitizeTierValue(ranks.crystalPvpTier),
+        uhcTier: sanitizeTierValue(ranks.uhcTier),
+        nethpotTier: sanitizeTierValue(ranks.nethpotTier),
+        smpPvpTier: sanitizeTierValue(ranks.smpPvpTier),
+        macePvpTier: sanitizeTierValue(ranks.macePvpTier),
+        cartPvpTier: sanitizeTierValue(ranks.cartPvpTier),
         overallTier: Tier.none,
         tags: [],
       };

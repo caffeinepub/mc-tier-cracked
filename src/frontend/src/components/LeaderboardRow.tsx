@@ -91,6 +91,8 @@ export default function LeaderboardRow({
 
   // Build ordered list of gamemodes this player has ranks in
   const rankedModes = GAMEMODES.filter((gm) => ranks[gm.id]);
+  // On mobile, show max 3 chips to prevent overflow; show all on larger screens
+  const MAX_CHIPS_MOBILE = 3;
 
   return (
     <Link
@@ -180,29 +182,78 @@ export default function LeaderboardRow({
       {/* Gamemode tier chips */}
       {rankedModes.length > 0 ? (
         <div
-          className="flex items-center gap-1.5 flex-shrink-0 overflow-x-auto"
-          style={{ maxWidth: "min(55%, 360px)", scrollbarWidth: "none" }}
+          className="flex items-center gap-1 flex-shrink-0 overflow-hidden sm:overflow-x-auto"
+          style={{
+            maxWidth: "min(45%, 280px)",
+            scrollbarWidth: "none",
+          }}
         >
-          {rankedModes.map((gm) => {
+          {rankedModes.slice(0, MAX_CHIPS_MOBILE).map((gm) => {
             const tier = ranks[gm.id]!;
             const { text: tierColor } = getTierColor(tier);
             return (
               <div
                 key={gm.id}
-                className="flex flex-col items-center gap-0.5 flex-shrink-0"
+                className="flex flex-col items-center gap-0.5 flex-shrink-0 sm:flex"
                 title={`${gm.name}: ${tier}`}
                 style={{
-                  width: "44px",
-                  padding: "4px 2px",
+                  width: "40px",
+                  padding: "3px 2px",
                   borderRadius: "6px",
                   background: "rgba(255,255,255,0.04)",
                   border: "1px solid rgba(255,255,255,0.07)",
                 }}
               >
-                <GamemodeIcon id={gm.id} size={14} />
+                <GamemodeIcon id={gm.id} size={13} />
                 <span
                   style={{
-                    fontSize: "7.5px",
+                    fontSize: "7px",
+                    fontWeight: 700,
+                    color: tierColor,
+                    lineHeight: 1.2,
+                    textAlign: "center",
+                    letterSpacing: "0.01em",
+                    wordBreak: "break-all",
+                  }}
+                >
+                  {tier}
+                </span>
+              </div>
+            );
+          })}
+          {rankedModes.length > MAX_CHIPS_MOBILE && (
+            <span
+              className="flex-shrink-0 sm:hidden"
+              style={{
+                fontSize: "9px",
+                color: "#9AA3B2",
+                fontWeight: 600,
+                whiteSpace: "nowrap",
+              }}
+            >
+              +{rankedModes.length - MAX_CHIPS_MOBILE}
+            </span>
+          )}
+          {rankedModes.slice(MAX_CHIPS_MOBILE).map((gm) => {
+            const tier = ranks[gm.id]!;
+            const { text: tierColor } = getTierColor(tier);
+            return (
+              <div
+                key={gm.id}
+                className="hidden sm:flex flex-col items-center gap-0.5 flex-shrink-0"
+                title={`${gm.name}: ${tier}`}
+                style={{
+                  width: "40px",
+                  padding: "3px 2px",
+                  borderRadius: "6px",
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid rgba(255,255,255,0.07)",
+                }}
+              >
+                <GamemodeIcon id={gm.id} size={13} />
+                <span
+                  style={{
+                    fontSize: "7px",
                     fontWeight: 700,
                     color: tierColor,
                     lineHeight: 1.2,
